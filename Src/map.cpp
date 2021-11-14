@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <vector>
 #include "map.h"
-
+using namespace std;
 /*
 Free = 0;
 Destructible = 1;
@@ -16,6 +16,9 @@ void Map::InitializeMap(vector<vector<int>> input)
   map_size_row = input.size();
   map_size_col = input[0].size();
 
+  vector<int> tmp(map_size_col);
+  map.resize(map_size_row, tmp);
+  
   for(int i = 0; i < map_size_row; i++)
   {
     for(int j = 0; j < map_size_col; j++)
@@ -40,4 +43,4 @@ int Map::GetGrid(int x, int y)
   return map[x][y];
 }
 
-void Map::DrawMap(); // JJJ
+//void Map::DrawMap(); // JJJ

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <vector>
-
+using namespace std;
 /*
 Free = 0;
 Destructible = 1;
@@ -22,5 +22,5 @@ public:
   vector<vector<int>> GetMap();
   void SetGrid(int x, int y, int value);
   int GetGrid(int x, int y);
-  void DrawMap(); // JJJ
+  //void DrawMap(); // JJJ
 };
