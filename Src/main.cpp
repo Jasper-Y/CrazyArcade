@@ -1,4 +1,5 @@
-#include "crazyarcade.h"
+// #include "crazyarcade.h"
+#include "fssimplewindow.h" // for test
 #include <chrono>
 #include <iostream>
 #include <mutex>
@@ -8,7 +9,9 @@
 const int X_WINDOW_RANGE = 1000;
 const int Y_WINDOW_RANGE = 800;
 enum CommandType {
-    P1_FORWARD = 0,
+    INVALID = 0,
+    USER_TERMINATE,
+    P1_FORWARD,
     P1_BACK,
     P1_LEFT,
     P1_RIGHT,
@@ -73,8 +76,11 @@ void ExecuteCommand(GameManager *manager) {
                 // @TODO: call player2 LayBubble
                 break;
             }
-            default:
-                continue;
+            default: {
+                printf("[INFO] Stop playing\n");
+                manager->SetPlaying(false);
+                break;
+            }
             }
 
             // @TODO: update state
@@ -89,19 +95,22 @@ void ExecuteCommand(GameManager *manager) {
 }
 
 int main(void) {
-
     GameManager manager;
     std::thread background(&ExecuteCommand, &manager);
     FsOpenWindow(0, 0, X_WINDOW_RANGE, Y_WINDOW_RANGE, 1);
     int key, terminate = 0;
     CommandType command;
     while (terminate == 0) {
+        command = INVALID;
         FsPollDevice();
         key = FsInkey();
         switch (key) {
-        case FSKEY_ESC:
+        case FSKEY_ESC: {
             terminate = 1;
+            command = USER_TERMINATE;
+            printf("[INFO] Received esc\n");
             break;
+        }
         case FSKEY_W:
             command = P1_FORWARD;
             break;
@@ -128,15 +137,21 @@ int main(void) {
             break;
         case FSKEY_SPACE: {
             command = P1_PLACE;
+            break;
         }
         case FSKEY_ENTER: {
             command = P2_PLACE;
+            break;
         }
         default:
             break;
         }
-        std::lock_guard<std::mutex> lock(manager.buf_mutex);
-        manager.cmd_buf.push(command);
+
+        if (command != INVALID) {
+            std::lock_guard<std::mutex> lock(manager.buf_mutex);
+            manager.cmd_buf.push(command);
+        }
+
         if (!manager.IsPlaying()) {
             terminate = 1;
         }
