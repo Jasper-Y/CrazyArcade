@@ -4,10 +4,10 @@
 @todo
 
 ### Construction
-<img src="Data/code_structure.png" width="90%">
+<img src="Data/readme/code_structure.png" width="90%">
 
 ### Flow
-<img src="Data/flow_chart.png" width="90%">
+<img src="Data/readme/flow_chart.png" width="90%">
 
 #### TODO
 * Zhengyang: `Player`
