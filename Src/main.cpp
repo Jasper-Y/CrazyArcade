@@ -28,13 +28,29 @@ class GameManager {
     bool is_playing = true;
 
   public:
+    GameManager() {
+        map = new Map();
+        p1 = new Player(map);
+        p2 = new Player(map);
+    }
+
+    ~GameManager() {
+        delete map;
+        delete p1;
+        delete p2;
+    }
+
     inline bool IsPlaying(void) {
         return is_playing;
     }
+
     inline void SetPlaying(bool state) {
         is_playing = state;
     }
+
     // @TODO: Add player, map, and other objects
+    Map *map;
+    Player *p1, *p2;
     std::queue<CommandType> cmd_buf;
     std::mutex buf_mutex;
 };
