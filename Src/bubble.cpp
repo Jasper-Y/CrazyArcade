@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <queue>
+#include <bubble.h>
 
 class Bubble 
 {
@@ -12,8 +13,8 @@ private:
 public:
     Bubble();
     void SetLoc(int cur_x, int cur_y);
-    int Update(int **grid);
-	void Explode(int **grid);
+    void Explode(Map *map, int range);
+    int Update(Map *map, int range);
     void Draw();
 };
 
@@ -29,111 +30,136 @@ void Bubble::SetLoc(int cur_x, int cur_y)
     y = cur_y;
 }
 
-void Bubble::Explode(int **grid, int map_size, int range) 
+void Bubble::Explode(Map *map, int range) 
 {
-    int status = 0;
-   
     for (int i = 1; i <= range; i++) 
     {   
-        if (grid[i + x][y] == 2 || i + x == map_size - 1)
+        int nx, ny;
+        nx = i + x;
+        ny = y;
+        int grid_status = map.GetGrid(nx, ny);
+        
+        if (grid_status == GridInvalid || grid_status == GridIndestructible)
         {
             break;
-        }
-        else if(grid[i + x][y] == 0) 
+        } 
+        else if grid_status == GridFree) 
         {
             continue;
-        } else {
+        } 
+        else 
+        {
             // randomly transfer explode obstacle to free/props
             srand(time(nullptr));
             status = rand() % 10;
             if (status <= 6) {
-                grid[i + x][y] = 0;
+                map.SetGrid(nx, ny, GridFree);
             } 
             else if (status == 7)
             {
-                grid[i + x][y] = 3;
+                map.SetGrid(nx, ny, GridMoreBubble);
             } 
             else if (status == 8)
             {
-                grid[i + x][y] = 4;
+                map.SetGrid(nx, ny, GridLongerBubble);
             } 
             else if (status == 9) 
             {
-                grid[i + x][y] = 5;
+                map.SetGrid(nx, ny, GridSpeedUp);
             }
         }
     }
     for (int i = -1; i >= -range; i--) {
-        if (grid[i + x][y] == 2 || i + x == 0) {
+        int nx, ny;
+        nx = i + x;
+        ny = y;
+        int grid_status = map.GetGrid(nx, ny);
+
+        if (grid_status == GridInvalid || grid_status == GridIndestructible) {
             break;
-        } else if (grid[i + x][y] == 0) {
-            continue;
-        } else {
+        } else if grid_status == GridFree) 
+        {
+                continue;
+            }
+        else {
             // randomly transfer explode obstacle to free/props
             srand(time(nullptr));
             status = rand() % 10;
             if (status <= 6) {
-                grid[i + x][y] = 0;
+                map.SetGrid(nx, ny, GridFree);
             } else if (status == 7) {
-                grid[i + x][y] = 3;
+                map.SetGrid(nx, ny, GridMoreBubble);
             } else if (status == 8) {
-                grid[i + x][y] = 4;
+                map.SetGrid(nx, ny, GridLongerBubble);
             } else if (status == 9) {
-                grid[i + x][y] = 5;
+                map.SetGrid(nx, ny, GridSpeedUp);
             }
         }
     }
     for (int i = 1; i <= range; i++) {
-        if (grid[x][i + y] == 2 || i + y == map_size - 1) {
+        int nx, ny;
+        nx = x;
+        ny = y + i;
+        int grid_status = map.GetGrid(nx, ny);
+
+        if (grid_status == GridInvalid || grid_status == GridIndestructible) {
             break;
-        } else if (grid[x][i + y] == 0) {
-            continue;
-        } else {
+        } else if grid_status == GridFree) 
+        {
+                continue;
+            }
+        else {
             // randomly transfer explode obstacle to free/props
             srand(time(nullptr));
             status = rand() % 10;
             if (status <= 6) {
-                grid[x][i + y] = 0;
+                map.SetGrid(nx, ny, GridFree);
             } else if (status == 7) {
-                grid[x][i + y] = 3;
+                map.SetGrid(nx, ny, GridMoreBubble);
             } else if (status == 8) {
-                grid[x][i + y] = 4;
+                map.SetGrid(nx, ny, GridLongerBubble);
             } else if (status == 9) {
-                grid[x][i + y] = 5;
+                map.SetGrid(nx, ny, GridSpeedUp);
             }
         }
     }
     for (int i = -1; i >= -range; i--) {
-        if (grid[x][i + y] == 2 || i + y == 0) {
+        int nx, ny;
+        nx = x;
+        ny = y + i;
+        int grid_status = map.Get(nx, ny);
+
+        if (grid_status == GridInvalid || grid_status == GridIndestructible) {
             break;
-        } else if (grid[x][i + y] == 0) {
-            continue;
-        } else {
+        } else if grid_status == GridFree) 
+        {
+                continue;
+            }
+        else {
             // randomly transfer explode obstacle to free/props
             srand(time(nullptr));
             status = rand() % 10;
             if (status <= 6) {
-                grid[x][i + y] = 0;
+                map.Set(nx, ny, GridFree);
             } else if (status == 7) {
-                grid[x][i + y] = 3;
+                map.Set(nx, ny, GridMoreBubble);
             } else if (status == 8) {
-                grid[x][i + y] = 4;
+                map.Set(nx, ny, GridLongerBubble);
             } else if (status == 9) {
-                grid[x][i + y] = 5;
+                map.Set(nx, ny, GridSpeedUp);
             }
         }
     }
-
     return;
 }
 
 
-int Bubble::Update(int **grid, int map_size, int range)
+int Bubble::Update(Map *map, int range) 
 {   
     time_counter++;
     if (time_counter >= life_span) 
-    {
-        Explode(grid, map_size, range);
+    {   
+        Explode(Map * map, int range);
         return 1;
     }
     return 0;
@@ -151,52 +177,67 @@ private:
     int capacity;
     int range;
     queue <Bubble> bubble_list;
+    Map *map;
 
 public:
     BubbleManager();
+    ~BubbleManager();
     void GetProps(int prop_status);
-    void UpdateBubbles(int **grid, int map_size, int range);
+    void UpdateBubbles(void);
     void LayBubble(int x, int y);
+    void Explode(void);
 }
 
 BubbleManager::BubbleManager() 
 {
     capacity = 1;
     range = 2;
+    map = NULL;
 }
+
+BubbleManager::~BubbleManager() 
+{
+    if (map != NULL)
+    {
+        map = NULL;
+    }
+    capacity = 0;
+    range = 0;
+}
+
 
 void BubbleManager::GetProps(int prop_status) 
 {
-    if (prop_status == 3) 
+    if (prop_status == GridMoreBubble) 
     {
         capacity++;
-    } else if (prop_status == 4) {
+    } else if (prop_status == GridLongerBubble) {
         range++;
     }
 }
 
-void UpdateBubbles(int **grid, int map_size, int range) {
+void BubbleManager::UpdateBubbles(void) {
     size = bubble_list.size();
     for (int i = 0; i < size; i++)
     {
         bubble = bubble_list[i];
-        status = bubble.Update(grid, map_size, range);
+        status = bubble.Update(map, range);
         if (status == 1)
-        {
+        {   
             bubble_list.pop();
         }
     }
 }
 
-void LayBubble(int x, int y)
+void BubbleManager::LayBubble(int x, int y) 
 {
-    Bubble bubble;
-    bubble.SetLoc(x, y);
-
+    
     if (bubble_list.size() >= capacity) {
         return;
     }
     else {
+        Bubble bubble;
+        bubble.SetLoc(x, y);
         bubble_list.push(bubble);
     }
     return;
