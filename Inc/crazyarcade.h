@@ -7,6 +7,9 @@
 #include "yssimplesound.h"
 #endif
 
+#ifndef CRAZY_HEADERS
+#define CRAZY_HEADERS
+
 #include <chrono>
 #include <ctime>
 #include <iostream>
@@ -45,3 +48,5 @@ enum CommandType {
     P2_RIGHT,
     P2_PLACE
 };
+
+#endif

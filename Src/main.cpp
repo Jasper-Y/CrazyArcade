@@ -1,16 +1,7 @@
 #include "crazyarcade.h"
-
-#ifndef BUBBLE
 #include "bubble.h"
-#endif
-
-#ifndef PLAYER
 #include "player.h"
-#endif
-
-#ifndef MAP
 #include "map.h"
-#endif
 
 class GameManager {
   private:

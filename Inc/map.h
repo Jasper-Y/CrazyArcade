@@ -1,8 +1,7 @@
-#include "crazyarcade.h"
-
 #ifndef MAP
 #define MAP
-#endif
+
+#include "crazyarcade.h"
 
 class Map {
   protected:
@@ -20,3 +19,4 @@ class Map {
     bool Reachable(int x, int y);
     void Draw(YsRawPngDecoder *png1) const;
 };
+#endif

@@ -1,12 +1,8 @@
-#include "crazyarcade.h"
-
 #ifndef BUBBLE
 #define BUBBLE
-#endif
 
-#ifndef MAP
+#include "crazyarcade.h"
 #include "map.h"
-#endif
 
 class Bubble {
   private:
@@ -37,3 +33,4 @@ class BubbleManager {
     void UpdateBubbles();
     void LayBubble(int x, int y);
 };
+#endif
