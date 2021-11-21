@@ -1,22 +1,6 @@
-#include "fssimplewindow.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
-#include <chrono>
-#include <ctime>
+#include "map.h"
 using namespace std;
 using namespace chrono;
-#include "yssimplesound.h"
-#include "ysglfontdata.h"
-#include <iostream>
-#include "yspng.h"
-#include "yspngenc.h"
-#include <chrono>
-#include <thread>
-#include <stdio.h>
-#include <stdlib.h>
-#include "fssimplewindow.h"
 
 
 class CharBitmap

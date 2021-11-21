@@ -1,27 +1,16 @@
-// #include "crazyarcade.h"
-#include "fssimplewindow.h" // for test
-#include <chrono>
-#include <iostream>
-#include <mutex>
-#include <queue>
-#include <thread>
+#include "crazyarcade.h"
 
-const int X_WINDOW_RANGE = 1000;
-const int Y_WINDOW_RANGE = 800;
-enum CommandType {
-    INVALID = 0,
-    USER_TERMINATE,
-    P1_FORWARD,
-    P1_BACK,
-    P1_LEFT,
-    P1_RIGHT,
-    P1_PLACE,
-    P2_FORWARD,
-    P2_BACK,
-    P2_LEFT,
-    P2_RIGHT,
-    P2_PLACE
-};
+#ifndef BUBBLE
+#include "bubble.h"
+#endif
+
+#ifndef PLAYER
+#include "player.h"
+#endif
+
+#ifndef MAP
+#include "map.h"
+#endif
 
 class GameManager {
   private:
@@ -116,7 +105,7 @@ void ExecuteCommand(GameManager *manager) {
 int main(void) {
     GameManager manager;
     std::thread background(&ExecuteCommand, &manager);
-    FsOpenWindow(0, 0, X_WINDOW_RANGE, Y_WINDOW_RANGE, 1);
+    FsOpenWindow(0, 0, RESOLUTION * ROW, RESOLUTION * COLUMN, 1);
     int key, terminate = 0;
     CommandType command;
     while (terminate == 0) {
