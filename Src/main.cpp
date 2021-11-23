@@ -1,7 +1,9 @@
+// clang-format off
 #include "crazyarcade.h"
 #include "bubble.h"
-#include "player.h"
 #include "map.h"
+#include "player.h"
+// clang-format on
 
 class GameManager {
   private:
@@ -9,7 +11,7 @@ class GameManager {
 
   public:
     GameManager() {
-        map = new Map();
+        map = new Bitmap();
         p1 = new Player(map);
         p2 = new Player(map);
     }
@@ -28,8 +30,22 @@ class GameManager {
         is_playing = state;
     }
 
+    /**
+     * @brief Update the states and return the status of players
+     *
+     * @return false if the game is over
+     */
+    bool Update(void) {
+        // @todo: update all attributes
+        return true;
+    }
+
+    void Draw(void) {
+        map->Draw();
+    }
+
     // @TODO: Add player, map, and other objects
-    Map *map;
+    Bitmap *map;
     Player *p1, *p2;
     std::queue<CommandType> cmd_buf;
     std::mutex buf_mutex;
@@ -81,13 +97,15 @@ void ExecuteCommand(GameManager *manager) {
 
             // @TODO: update state
             // manager->SetPlaying(some_return_state);
-            if (!manager->IsPlaying()) {
+            if (!manager->IsPlaying() || manager->Update()) {
                 printf("[Game overrrr]\n");
                 break;
             }
 
+            manager->Draw();
+
             // Represent the operation cost for rendering
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
