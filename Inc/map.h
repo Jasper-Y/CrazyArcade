@@ -3,20 +3,28 @@
 
 #include "crazyarcade.h"
 
-class Map {
-  protected:
-    char *pix = nullptr;
+class Bitmap {
+  private:
+    int wid = 0, hei = 0;
+    GridStatus *pix = nullptr;
+    YsRawPngDecoder png[5];
+    YsRawPngDecoder pngbackgroud;
 
   public:
-    Map();
-    ~Map();
-    void CleanUp();
+    Bitmap();
+    ~Bitmap();
+    void CleanUp(void);
     void Create(int w, int h);
-    // void SetPixel(int x, int y, int p);
+    void SetPixel(int x, int y, GridStatus p);
+
+    // The return data type of GetPixel can be any integral data type.
     GridStatus GetPixel(int x, int y) const;
-    void SetGrid(int row, int col, GridStatus grid_status);
-    GridStatus GetGrid(int row, int col);
-    bool Reachable(int x, int y);
-    void Draw(YsRawPngDecoder *png1) const;
+    void Drawbackgroud() const;
+    void Draw() const;
+
+    // @todo:
+    // bool Reachable(int x, int y) const;
+    // void SetGrid(int row, int col, GridStatus grid_status);
+    // GridStatus GetGrid(int row, int col) const;
 };
 #endif
