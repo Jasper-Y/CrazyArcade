@@ -1,12 +1,3 @@
-#ifndef YS_FILES
-#define YS_FILES
-#include "fssimplewindow.h"
-#include "ysglfontdata.h"
-#include "yspng.h"
-#include "yspngenc.h"
-#include "yssimplesound.h"
-#endif
-
 #ifndef CRAZY_HEADERS
 #define CRAZY_HEADERS
 
@@ -15,10 +6,12 @@
 #include <iostream>
 #include <math.h>
 #include <mutex>
+#include <queue>
 #include <stdio.h>
 #include <stdlib.h>
 #include <thread>
 #include <time.h>
+#include <vector>
 
 #define ROW 13
 #define COLUMN 15
@@ -49,4 +42,12 @@ enum CommandType {
     P2_PLACE
 };
 
+#endif
+
+#ifndef YS_FILES
+#define YS_FILES
+#include "fssimplewindow.h"
+#include "ysglfontdata.h"
+#include "yspng.h"
+#include "yssimplesound.h"
 #endif

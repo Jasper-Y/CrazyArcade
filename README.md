@@ -3,6 +3,15 @@
 ### Overview
 @todo
 
+### Install
+* **Mac**
+    ```
+    ./install-mac.sh -p ../Some_Path
+    ```
+    Change `../Some_Path` to your own project path which contains YS library files.
+* **Win**
+    @todo
+
 ### Construction
 <img src="Data/Readme/code_structure.png" width="90%">
 

@@ -1,8 +1,8 @@
 // clang-format off
 #include "crazyarcade.h"
-#include "bubble.h"
+// #include "bubble.h"
 #include "map.h"
-#include "player.h"
+// #include "player.h"
 // clang-format on
 
 class GameManager {
@@ -12,14 +12,14 @@ class GameManager {
   public:
     GameManager() {
         map = new Bitmap();
-        p1 = new Player(map);
-        p2 = new Player(map);
+        // p1 = new Player(map);
+        // p2 = new Player(map);
     }
 
     ~GameManager() {
         delete map;
-        delete p1;
-        delete p2;
+        // delete p1;
+        // delete p2;
     }
 
     inline bool IsPlaying(void) {
@@ -46,7 +46,7 @@ class GameManager {
 
     // @TODO: Add player, map, and other objects
     Bitmap *map;
-    Player *p1, *p2;
+    // Player *p1, *p2;
     std::queue<CommandType> cmd_buf;
     std::mutex buf_mutex;
 };
@@ -102,7 +102,9 @@ void ExecuteCommand(GameManager *manager) {
                 break;
             }
 
-            manager->Draw();
+            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            // manager->Draw();
+            // FsSwapBuffers();
 
             // Represent the operation cost for rendering
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -113,8 +115,8 @@ void ExecuteCommand(GameManager *manager) {
 
 int main(void) {
     GameManager manager;
+    FsOpenWindow(0, 0, RESOLUTION * COLUMN, RESOLUTION * ROW, 1);
     std::thread background(&ExecuteCommand, &manager);
-    FsOpenWindow(0, 0, RESOLUTION * ROW, RESOLUTION * COLUMN, 1);
     int key, terminate = 0;
     CommandType command;
     while (terminate == 0) {
@@ -172,6 +174,10 @@ int main(void) {
         if (!manager.IsPlaying()) {
             terminate = 1;
         }
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        manager.Draw();
+        FsSwapBuffers();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
