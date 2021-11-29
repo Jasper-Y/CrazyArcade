@@ -1,6 +1,6 @@
 #include "bubble.h"
 
-Bubble::Bubble(Map *map) {
+Bubble::Bubble(Bitmap *map) {
     this->map = map;
 }
 
@@ -23,7 +23,7 @@ void Bubble::Explode(int range) {
         } else {
             // randomly transfer explode obstacle to free/props
             srand(time(nullptr));
-            status = rand() % 10;
+            int status = rand() % 10;
             if (status <= 6) {
                 map->SetGrid(nx, ny, GridFree);
             } else if (status == 7) {
@@ -48,7 +48,7 @@ void Bubble::Explode(int range) {
         } else {
             // randomly transfer explode obstacle to free/props
             srand(time(nullptr));
-            status = rand() % 10;
+            int status = rand() % 10;
             if (status <= 6) {
                 map->SetGrid(nx, ny, GridFree);
             } else if (status == 7) {
@@ -73,7 +73,7 @@ void Bubble::Explode(int range) {
         } else {
             // randomly transfer explode obstacle to free/props
             srand(time(nullptr));
-            status = rand() % 10;
+            int status = rand() % 10;
             if (status <= 6) {
                 map->SetGrid(nx, ny, GridFree);
             } else if (status == 7) {
@@ -89,7 +89,7 @@ void Bubble::Explode(int range) {
         int nx, ny;
         nx = x;
         ny = y + i;
-        int grid_status = map->Get(nx, ny);
+        int grid_status = map->GetGrid(nx, ny);
 
         if (grid_status == GridInvalid || grid_status == GridIndestructible) {
             break;
@@ -98,7 +98,7 @@ void Bubble::Explode(int range) {
         } else {
             // randomly transfer explode obstacle to free/props
             srand(time(nullptr));
-            status = rand() % 10;
+            int status = rand() % 10;
             if (status <= 6) {
                 map->SetGrid(nx, ny, GridFree);
             } else if (status == 7) {
@@ -116,29 +116,29 @@ void Bubble::Explode(int range) {
 int Bubble::Update(int range) {
     time_counter++;
     if (time_counter >= life_span) {
-        Explode(int range);
+        Explode(range);
         return 1;
     }
     return 0;
 }
 
 void Bubble::Draw() {
-    //TODO: implement draw
+    // TODO: implement draw
     return;
 }
 
-BubbleManager::BubbleManager(Map *map) {
+BubbleManager::BubbleManager(Bitmap *map) {
     this->map = map;
 }
 
 BubbleManager::~BubbleManager() {
-    for (std::queue<Bubble *>::iterator p = bubble_list.begin();
+    for (std::deque<Bubble *>::iterator p = bubble_list.begin();
          p != bubble_list.end(); p++) {
-        delete p;
+        delete *p;
     }
 }
 
-void BubbleManager::GetProps(int prop_status) {
+void BubbleManager::AddProps(int prop_status) {
     if (prop_status == GridMoreBubble) {
         capacity++;
     } else if (prop_status == GridLongerBubble) {
@@ -147,17 +147,18 @@ void BubbleManager::GetProps(int prop_status) {
 }
 
 void BubbleManager::UpdateBubbles(void) {
-    size = bubble_list.size();
-    for (std::queue<Bubble *>::iterator it = bubble_list.begin();
+    int size = bubble_list.size();
+    int cnt = 0;
+    for (std::deque<Bubble *>::iterator it = bubble_list.begin();
          it != bubble_list.end(); it++) {
-        int cnt = 0;
-        if (it->Update(range) == 1) {
+        if ((*it)->Update(range) == 1) {
             cnt++;
         }
     }
     Bubble *p;
     while (cnt-- > 0) {
-        p = bubble_list.pop();
+        p = bubble_list.front();
+        bubble_list.pop_front();
         delete p;
     }
 }
@@ -168,6 +169,6 @@ void BubbleManager::LayBubble(int x, int y) {
     } else {
         Bubble *new_bubble = new Bubble(map);
         new_bubble->SetLoc(x, y);
-        bubble_list.push(new_bubble);
+        bubble_list.push_back(new_bubble);
     }
 }

@@ -9,10 +9,10 @@ class Bubble {
     int x, y;
     int life_span = 20;
     int time_counter = 0;
-    Map *map;
+    Bitmap *map;
 
   public:
-    Bubble(Map *map);
+    Bubble(Bitmap *map);
     void SetLoc(int cur_x, int cur_y);
     int Update(int range);
     void Explode(int range);
@@ -23,13 +23,13 @@ class BubbleManager {
   private:
     int capacity = 1;
     int range = 2;
-    std::queue<Bubble *> bubble_list;
-    Map *map;
+    std::deque<Bubble *> bubble_list;
+    Bitmap *map;
 
   public:
-    BubbleManager(Map *map);
+    BubbleManager(Bitmap *map);
     ~BubbleManager();
-    void GetProps(int prop_status);
+    void AddProps(int prop_status);
     void UpdateBubbles();
     void LayBubble(int x, int y);
 };
