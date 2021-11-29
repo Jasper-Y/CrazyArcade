@@ -5,7 +5,7 @@
 Player::Player() {
 	x = -1; // use -1 as empty value
 	y = -1;
-	v = 0;
+	v = 100;
 	player_id = 1;
 	state = alive;
 	heading = PlayerUp;
@@ -14,10 +14,10 @@ Player::Player() {
 	std::string temp;
 	char char_arr[10];
 
-	temp = player_id_str + std::string("front.png");
+	temp = player_id_str + std::string("back.png");
 	strcpy(char_arr, temp.c_str());
 	png[0].Decode(char_arr);
-	temp = player_id_str + std::string("back.png");
+	temp = player_id_str + std::string("front.png");
 	strcpy(char_arr, temp.c_str());
 	png[1].Decode(char_arr);
 	temp = player_id_str + std::string("left.png");
@@ -39,7 +39,7 @@ void Player::SetLocation(int loc_x, int loc_y){
 Player::Player(int loc_x, int loc_y, int id, Bitmap *m) {
 	x = loc_x;
 	y = loc_y;
-	v = 0;
+	v = 100;
 	state = alive;
 	heading = PlayerUp;
 
@@ -52,15 +52,22 @@ Player::Player(int loc_x, int loc_y, int id, Bitmap *m) {
 	temp = player_id_str + std::string("front.png");
 	strcpy(char_arr, temp.c_str());
 	png[0].Decode(char_arr);
+	png[0].Flip();
+
 	temp = player_id_str + std::string("back.png");
 	strcpy(char_arr, temp.c_str());
 	png[1].Decode(char_arr);
+	png[1].Flip();
+
 	temp = player_id_str + std::string("left.png");
 	strcpy(char_arr, temp.c_str());
 	png[2].Decode(char_arr);
+	png[2].Flip();
+	
 	temp = player_id_str + std::string("right.png");
 	strcpy(char_arr, temp.c_str());
 	png[3].Decode(char_arr);
+	png[3].Flip();
 
 
 	// bubble_manager = BubbleManager();
@@ -83,6 +90,7 @@ void Player::Draw() const {
 			i = 3;
 			break;
 	}
+	// png[i].Flip();
 	glDrawPixels(png[i].wid, png[i].hei, GL_RGBA, GL_UNSIGNED_BYTE,
                              png[i].rgba);
 
@@ -115,21 +123,27 @@ int Player::GetLocationY() const {
 
 void Player::MovePlayer(Player_Heading h) {
 	heading = h;
+	int next_y = y, next_x = x;
 	switch(h) {
 		case PlayerUp:
 			// use ordinary coordinate system
-			y += PLAYER_DT * v;
+			next_y = y - PLAYER_DT * v;
 			break;
 		case PlayerDown:
-			y -= PLAYER_DT * v;
+			next_y = y + PLAYER_DT * v;
 			break;
 		case PlayerRight:
-			x += PLAYER_DT * v;
+			next_x = x + PLAYER_DT * v;
 			break;
 		case PlayerLeft:
-			x -= PLAYER_DT * v;
+			next_x = x - PLAYER_DT * v;
 			break;
 	}
+	if (map->Reachable(next_x, next_y)) {
+		x = next_x;
+		y = next_y;
+	}
+	printf("player1, x = %d, y = %d\n", x, y);
 }
 
 void Player::isDead(){
