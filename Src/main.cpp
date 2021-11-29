@@ -2,8 +2,8 @@
 #include "crazyarcade.h"
 // #include "bubble.h"
 #include "map.h"
-// #include "player.h"
 // clang-format on
+#include "player.h"
 
 class GameManager {
   private:
@@ -12,14 +12,14 @@ class GameManager {
   public:
     GameManager() {
         map = new Bitmap();
-        // p1 = new Player(map);
-        // p2 = new Player(map);
+        p1 = new Player(100, 100, 1, map);
+        p2 = new Player(200, 200, 1, map);
     }
 
     ~GameManager() {
         delete map;
-        // delete p1;
-        // delete p2;
+        delete p1;
+        delete p2;
     }
 
     inline bool IsPlaying(void) {
@@ -42,11 +42,13 @@ class GameManager {
 
     void Draw(void) {
         map->Draw();
+        p1->Draw();
+        p2->Draw();
     }
 
     // @TODO: Add player, map, and other objects
     Bitmap *map;
-    // Player *p1, *p2;
+    Player *p1, *p2;
     std::queue<CommandType> cmd_buf;
     std::mutex buf_mutex;
 };
@@ -63,26 +65,44 @@ void ExecuteCommand(GameManager *manager) {
 
             switch (cur_cmd) {
             case P1_FORWARD:
-            case P1_BACK:
-            case P1_LEFT:
-            case P1_RIGHT: {
-                printf("P1 movement: %d\n", cur_cmd);
-                // @TODO: call player1 MovePlayer
+                manager->p1->MovePlayer(PlayerUp);
                 break;
-            }
+            case P1_BACK:
+                manager->p1->MovePlayer(PlayerDown);
+                break;
+            case P1_LEFT:
+                manager->p1->MovePlayer(PlayerLeft);
+                break;
+            case P1_RIGHT: 
+                manager->p1->MovePlayer(PlayerRight);
+                break;
+                // {
+                // printf("P1 movement: %d\n", cur_cmd);
+                // // @TODO: call player1 MovePlayer
+                // break;
+            // }
             case P1_PLACE: {
                 printf("P1 place bubble: %d\n", cur_cmd);
                 // @TODO: call player1 LayBubble
                 break;
             }
             case P2_FORWARD:
-            case P2_BACK:
-            case P2_LEFT:
-            case P2_RIGHT: {
-                printf("P2 movement: %d\n", cur_cmd);
-                // @TODO: call player2 MovePlayer
+                manager->p2->MovePlayer(PlayerUp);
                 break;
-            }
+            case P2_BACK:
+                manager->p2->MovePlayer(PlayerDown);
+                break;
+            case P2_LEFT:
+                manager->p2->MovePlayer(PlayerLeft);
+                break;
+            case P2_RIGHT: 
+                manager->p2->MovePlayer(PlayerRight);
+                break;
+            //     {
+            //     printf("P2 movement: %d\n", cur_cmd);
+            //     // @TODO: call player2 MovePlayer
+            //     break;
+            // }
             case P2_PLACE: {
                 printf("P2 place bubble: %d\n", cur_cmd);
                 // @TODO: call player2 LayBubble

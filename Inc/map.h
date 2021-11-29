@@ -23,7 +23,7 @@ class Bitmap {
     void Draw() const;
 
     // @todo:
-    // bool Reachable(int x, int y) const;
+    bool Reachable(int x, int y) const;
     // void SetGrid(int row, int col, GridStatus grid_status);
     // GridStatus GetGrid(int row, int col) const;
 };

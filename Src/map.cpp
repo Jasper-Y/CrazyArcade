@@ -212,6 +212,22 @@ void Bitmap::Draw() const {
         }
     }
 }
+bool Bitmap::Reachable(int x, int y) const {
+    // convert pixel coordinate to grid
+
+    return true;
+    if (x <= 0 || x >= wid*RESOLUTION || y <= 0 || y >= hei*RESOLUTION){
+        return false;
+    }
+    x = x / RESOLUTION;
+    y = y / RESOLUTION;
+    
+    GridStatus status = GetPixel(x, y);
+    if (status == GridDestructible || status == GridIndestructible) {
+        return false;
+    }
+    return true;
+}
 
 /*
 int main(void) {
