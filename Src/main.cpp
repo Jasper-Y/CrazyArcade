@@ -134,6 +134,7 @@ void ExecuteCommand(GameManager *manager) {
 }
 
 int main(void) {
+    srand(time(nullptr));
     GameManager manager;
     FsOpenWindow(0, 0, RESOLUTION * COLUMN, RESOLUTION * ROW, 1);
     std::thread background(&ExecuteCommand, &manager);

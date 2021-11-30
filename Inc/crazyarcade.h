@@ -28,7 +28,6 @@ enum GridStatus {
     GridSpeedUp,
     GridBubbleWaitBig,
     GridBubbleWaitSmall,
-    GridBubbleExploding,
     GridExplodingMid,
     GridExplodingUpwards,
     GridExplodingDownwards,

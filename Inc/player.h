@@ -1,12 +1,13 @@
 #ifndef PLAYER_CLASS
 #define PLAYER_CLASS
-enum Player_State { alive, dead, immortal };
 
 #define PLAYER_DT 0.1
+#include "map.h"
+
+enum Player_State { alive, dead, immortal };
 
 enum Player_Heading { PlayerUp, PlayerDown, PlayerRight, PlayerLeft };
 
-#include "map.h"
 #endif
 
 // #ifndef BUBBLE_MANAGER
