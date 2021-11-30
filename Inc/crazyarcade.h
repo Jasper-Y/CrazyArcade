@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <ctime>
+#include <deque>
 #include <iostream>
 #include <math.h>
 #include <mutex>
@@ -20,15 +21,22 @@
 enum GridStatus {
     GridInvalid = 0,
     GridFree,
-    GridDestructible,
     GridIndestructible,
+    GridDestructible,
     GridMoreBubble,
     GridLongerBubble,
-    GridSpeedUp
+    GridSpeedUp,
+    GridBubbleWaitBig,
+    GridBubbleWaitSmall,
+    GridExplodingMid,
+    GridExplodingUpwards,
+    GridExplodingDownwards,
+    GridExplodingLeftwards,
+    GridExplodingRightwards
 };
 
 enum CommandType {
-    INVALID = 10,
+    INVALID = 20,
     USER_TERMINATE,
     P1_FORWARD,
     P1_BACK,

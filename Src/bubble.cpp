@@ -1,144 +1,155 @@
 #include "bubble.h"
 
-Bubble::Bubble(Map *map) {
-    this->map = map;
+Bubble::Bubble(Bitmap *map_in, int range, int x_in, int y_in)
+    : map(map_in), my_range(range), x(x_in), y(y_in) {
+    // Initialize to small, to make it big in first update
+    map->SetGrid(x, y, GridBubbleWaitSmall);
 }
 
-void Bubble::SetLoc(int cur_x, int cur_y) {
-    x = cur_x;
-    y = cur_y;
+// Return true if it's affected by neighbors, so re-update once
+bool Bubble::ChangeSingleGrid(int target_x, int target_y,
+                              BubbleDirection direction) {
+    GridStatus pre_status = map->GetGrid(target_x, target_y);
+    switch (pre_status) {
+    case GridFree: {
+        // Entering the exploding status or the exploding status is changed by
+        // other bubbles (it is redundant to check the DISAPPEAR_TIME, just
+        // leave it temporarily)
+        if (time_counter < EXPLODE_TIME && direction == BubbleMid) {
+            if (time_counter % 2 == 1) {
+                map->SetGrid(x, y, GridBubbleWaitBig);
+            } else {
+                map->SetGrid(x, y, GridBubbleWaitSmall);
+            }
+        } else if (time_counter >= EXPLODE_TIME &&
+                   time_counter < DISAPPEAR_TIME) {
+            switch (direction) {
+            case BubbleMid:
+                map->SetGrid(target_x, target_y, GridExplodingMid);
+                break;
+            case BubbleUpside:
+                map->SetGrid(target_x, target_y, GridExplodingUpwards);
+                break;
+            case BubbleDownside:
+                map->SetGrid(target_x, target_y, GridExplodingDownwards);
+                break;
+            case BubbleLeftside:
+                map->SetGrid(target_x, target_y, GridExplodingLeftwards);
+                break;
+            case BubbleRightside:
+                map->SetGrid(target_x, target_y, GridExplodingRightwards);
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    }
+    case GridInvalid:
+    case GridIndestructible:
+    case GridMoreBubble:
+    case GridLongerBubble:
+    case GridSpeedUp:
+        break;
+    case GridDestructible: {
+        // Generate props randomly
+        if (time_counter >= EXPLODE_TIME) {
+            int status = rand() % 10;
+            switch (status) {
+            case 7:
+                map->SetGrid(target_x, target_y, GridMoreBubble);
+                break;
+            case 8:
+                map->SetGrid(target_x, target_y, GridLongerBubble);
+                break;
+            case 9:
+                map->SetGrid(target_x, target_y, GridSpeedUp);
+                break;
+            default:
+                map->SetGrid(target_x, target_y, GridFree);
+                break;
+            }
+        }
+        break;
+    }
+    case GridBubbleWaitBig: {
+        if (time_counter >= EXPLODE_TIME) {
+            map->SetGrid(target_x, target_y, GridExplodingMid);
+        } else {
+            map->SetGrid(target_x, target_y, GridBubbleWaitSmall);
+        }
+        break;
+    }
+    case GridBubbleWaitSmall: {
+        if (time_counter >= EXPLODE_TIME) {
+            map->SetGrid(target_x, target_y, GridExplodingMid);
+        } else {
+            map->SetGrid(target_x, target_y, GridBubbleWaitBig);
+        }
+        break;
+    }
+    default: {
+        // This includes all exploding status
+        // If time_counter does not reach the explosion time but some grids are
+        // exploding, it should be effected by neighbor bubbles.
+        if (time_counter < EXPLODE_TIME) {
+            time_counter = EXPLODE_TIME;
+            return true;
+        } else if (time_counter >= DISAPPEAR_TIME) {
+            map->SetGrid(target_x, target_y, GridFree);
+        }
+        break;
+    }
+    }
+    return false;
 }
 
-void Bubble::Explode(int range) {
-    for (int i = 1; i <= range; i++) {
-        int nx, ny;
-        nx = i + x;
-        ny = y;
-        int grid_status = map->GetGrid(nx, ny);
-
-        if (grid_status == GridInvalid || grid_status == GridIndestructible) {
-            break;
-        } else if (grid_status == GridFree) {
-            continue;
-        } else {
-            // randomly transfer explode obstacle to free/props
-            srand(time(nullptr));
-            status = rand() % 10;
-            if (status <= 6) {
-                map->SetGrid(nx, ny, GridFree);
-            } else if (status == 7) {
-                map->SetGrid(nx, ny, GridMoreBubble);
-            } else if (status == 8) {
-                map->SetGrid(nx, ny, GridLongerBubble);
-            } else if (status == 9) {
-                map->SetGrid(nx, ny, GridSpeedUp);
-            }
-        }
-    }
-    for (int i = -1; i >= -range; i--) {
-        int nx, ny;
-        nx = i + x;
-        ny = y;
-        int grid_status = map->GetGrid(nx, ny);
-
-        if (grid_status == GridInvalid || grid_status == GridIndestructible) {
-            break;
-        } else if (grid_status == GridFree) {
-            continue;
-        } else {
-            // randomly transfer explode obstacle to free/props
-            srand(time(nullptr));
-            status = rand() % 10;
-            if (status <= 6) {
-                map->SetGrid(nx, ny, GridFree);
-            } else if (status == 7) {
-                map->SetGrid(nx, ny, GridMoreBubble);
-            } else if (status == 8) {
-                map->SetGrid(nx, ny, GridLongerBubble);
-            } else if (status == 9) {
-                map->SetGrid(nx, ny, GridSpeedUp);
-            }
-        }
-    }
-    for (int i = 1; i <= range; i++) {
-        int nx, ny;
-        nx = x;
-        ny = y + i;
-        int grid_status = map->GetGrid(nx, ny);
-
-        if (grid_status == GridInvalid || grid_status == GridIndestructible) {
-            break;
-        } else if (grid_status == GridFree) {
-            continue;
-        } else {
-            // randomly transfer explode obstacle to free/props
-            srand(time(nullptr));
-            status = rand() % 10;
-            if (status <= 6) {
-                map->SetGrid(nx, ny, GridFree);
-            } else if (status == 7) {
-                map->SetGrid(nx, ny, GridMoreBubble);
-            } else if (status == 8) {
-                map->SetGrid(nx, ny, GridLongerBubble);
-            } else if (status == 9) {
-                map->SetGrid(nx, ny, GridSpeedUp);
-            }
-        }
-    }
-    for (int i = -1; i >= -range; i--) {
-        int nx, ny;
-        nx = x;
-        ny = y + i;
-        int grid_status = map->Get(nx, ny);
-
-        if (grid_status == GridInvalid || grid_status == GridIndestructible) {
-            break;
-        } else if (grid_status == GridFree) {
-            continue;
-        } else {
-            // randomly transfer explode obstacle to free/props
-            srand(time(nullptr));
-            status = rand() % 10;
-            if (status <= 6) {
-                map->SetGrid(nx, ny, GridFree);
-            } else if (status == 7) {
-                map->SetGrid(nx, ny, GridMoreBubble);
-            } else if (status == 8) {
-                map->SetGrid(nx, ny, GridLongerBubble);
-            } else if (status == 9) {
-                map->SetGrid(nx, ny, GridSpeedUp);
-            }
-        }
-    }
-    return;
-}
-
-int Bubble::Update(int range) {
+int Bubble::Update() {
     time_counter++;
-    if (time_counter >= life_span) {
-        Explode(int range);
-        return 1;
+    bool re_update = false;
+
+    re_update = ChangeSingleGrid(x, y, BubbleMid);
+    if (!re_update && time_counter < EXPLODE_TIME) {
+        return time_counter;
+    } else if (!re_update) {
+        for (int i = -my_range; i <= my_range; i++) {
+            if (i == 0) {
+                continue;
+            }
+            if ((re_update = ChangeSingleGrid(x, y + i, BubbleDownside)) ==
+                true) {
+                break;
+            }
+            if ((re_update = ChangeSingleGrid(x + i, y, BubbleDownside)) ==
+                true) {
+                break;
+            }
+        }
     }
-    return 0;
+    if (re_update) {
+        for (int i = -my_range; i <= my_range; i++) {
+            if (i == 0) {
+                continue;
+            }
+            ChangeSingleGrid(x, y + i, BubbleDownside);
+            ChangeSingleGrid(x + i, y, BubbleDownside);
+        }
+    }
+    return time_counter;
 }
 
-void Bubble::Draw() {
-    //TODO: implement draw
-    return;
-}
-
-BubbleManager::BubbleManager(Map *map) {
+BubbleManager::BubbleManager(Bitmap *map) {
     this->map = map;
 }
 
 BubbleManager::~BubbleManager() {
-    for (std::queue<Bubble *>::iterator p = bubble_list.begin();
+    for (std::deque<Bubble *>::iterator p = bubble_list.begin();
          p != bubble_list.end(); p++) {
-        delete p;
+        delete *p;
     }
 }
 
-void BubbleManager::GetProps(int prop_status) {
+void BubbleManager::AddProps(GridStatus prop_status) {
     if (prop_status == GridMoreBubble) {
         capacity++;
     } else if (prop_status == GridLongerBubble) {
@@ -147,17 +158,18 @@ void BubbleManager::GetProps(int prop_status) {
 }
 
 void BubbleManager::UpdateBubbles(void) {
-    size = bubble_list.size();
-    for (std::queue<Bubble *>::iterator it = bubble_list.begin();
+    int size = bubble_list.size();
+    int cnt = 0;
+    for (std::deque<Bubble *>::iterator it = bubble_list.begin();
          it != bubble_list.end(); it++) {
-        int cnt = 0;
-        if (it->Update(range) == 1) {
+        if ((*it)->Update() >= DISAPPEAR_TIME) {
             cnt++;
         }
     }
     Bubble *p;
     while (cnt-- > 0) {
-        p = bubble_list.pop();
+        p = bubble_list.front();
+        bubble_list.pop_front();
         delete p;
     }
 }
@@ -165,9 +177,7 @@ void BubbleManager::UpdateBubbles(void) {
 void BubbleManager::LayBubble(int x, int y) {
     if (bubble_list.size() >= capacity) {
         return;
-    } else {
-        Bubble *new_bubble = new Bubble(map);
-        new_bubble->SetLoc(x, y);
-        bubble_list.push(new_bubble);
     }
+    Bubble *new_bubble = new Bubble(map, range, x, y);
+    bubble_list.push_back(new_bubble);
 }

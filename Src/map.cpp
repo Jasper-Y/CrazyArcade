@@ -29,15 +29,57 @@ Bitmap::Bitmap() {
         printf("Could not read the image.\n");
     }
 
-    if (YSOK == png[3].Decode("MorePowerful.png")) {
+    if (YSOK == png[3].Decode("morepowerful.png")) {
         png[3].Flip();
         printf("%d x %d\n", png[3].wid, png[3].hei);
     } else {
         printf("Could not read the image.\n");
     }
     if (YSOK == png[4].Decode("SpeedUp.png")) {
-        png[2].Flip();
+        png[4].Flip();
         printf("%d x %d\n", png[4].wid, png[4].hei);
+    } else {
+        printf("Could not read the image.\n");
+    }
+    if (YSOK == png[5].Decode("boom1.png")) {
+        png[5].Flip();
+        printf("%d x %d\n", png[5].wid, png[5].hei);
+    } else {
+        printf("Could not read the image.\n");
+    }
+    if (YSOK == png[6].Decode("boom2.png")) {
+        png[6].Flip();
+        printf("%d x %d\n", png[6].wid, png[6].hei);
+    } else {
+        printf("Could not read the image.\n");
+    }
+    if (YSOK == png[7].Decode("exploding_mid.png")) {
+        png[7].Flip();
+        printf("%d x %d\n", png[7].wid, png[7].hei);
+    } else {
+        printf("Could not read the image.\n");
+    }
+    if (YSOK == png[8].Decode("exploding_top.png")) {
+        png[8].Flip();
+        printf("%d x %d\n", png[8].wid, png[8].hei);
+    } else {
+        printf("Could not read the image.\n");
+    }
+    if (YSOK == png[9].Decode("exploding_top.png")) {
+        // Do NOT flip, representing downwards
+        printf("%d x %d\n", png[9].wid, png[9].hei);
+    } else {
+        printf("Could not read the image.\n");
+    }
+    if (YSOK == png[10].Decode("exploding_left.png")) {
+        png[10].Flip();
+        printf("%d x %d\n", png[10].wid, png[10].hei);
+    } else {
+        printf("Could not read the image.\n");
+    }
+    if (YSOK == png[11].Decode("exploding_left.png")) {
+        // Do NOT flip, representing rightwards
+        printf("%d x %d\n", png[11].wid, png[11].hei);
     } else {
         printf("Could not read the image.\n");
     }
@@ -140,19 +182,19 @@ void Bitmap::Create(int w, int h) {
     }
 }
 
-void Bitmap::SetPixel(int x, int y, GridStatus p) {
+void Bitmap::SetGrid(int x, int y, GridStatus p) {
     if (0 <= x && x < wid && 0 <= y && y < hei) {
         pix[y * wid + x] = p;
-        cout << p << "setpix"
-             << "\n";
+        // cout << p << "setpix"
+        //      << "\n";
     }
-    for (int i = 0; i < wid * hei; i++) {
-        cout << int(pix[i]) << ",";
-    }
-    cout << "\n";
+    // for (int i = 0; i < wid * hei; i++) {
+    //     cout << int(pix[i]) << ",";
+    // }
+    // cout << "\n";
 }
 
-GridStatus Bitmap::GetPixel(int x, int y) const {
+GridStatus Bitmap::GetGrid(int x, int y) const {
     if (0 <= x && x < wid && 0 <= y && y < hei) {
         return pix[y * wid + x];
     }
@@ -173,56 +215,31 @@ void Bitmap::Draw() const {
 
     for (int y = 0; y < hei; ++y) {
         for (int x = 0; x < wid; ++x) {
-            auto pix = GetPixel(x, y);
+            int pix = (int)GetGrid(x, y) - (int)GridIndestructible;
+            if (pix < 0 || pix > 11) {
+                if (pix > 11) {
+                    std::cout << "[ERROR] Found error status, row: " << y
+                              << ", col: " << x << ", value: " << pix
+                              << std::endl;
+                }
+                continue;
+            }
 
-            switch (pix) {
-            case GridIndestructible: {
-                glRasterPos2d(x * RESOLUTION, (y + 1) * RESOLUTION - 1);
-                glDrawPixels(png[0].wid, png[0].hei, GL_RGBA, GL_UNSIGNED_BYTE,
-                             png[0].rgba);
-                break;
-            }
-            case GridDestructible: {
-                glRasterPos2d(x * RESOLUTION, (y + 1) * RESOLUTION - 1);
-                glDrawPixels(png[1].wid, png[1].hei, GL_RGBA, GL_UNSIGNED_BYTE,
-                             png[1].rgba);
-                break;
-            }
-            case GridMoreBubble: {
-                glRasterPos2d(x * RESOLUTION, (y + 1) * RESOLUTION - 1);
-                glDrawPixels(png[2].wid, png[2].hei, GL_RGBA, GL_UNSIGNED_BYTE,
-                             png[2].rgba);
-                break;
-            }
-            case GridLongerBubble: {
-                glRasterPos2d(x * RESOLUTION, (y + 1) * RESOLUTION - 1);
-                glDrawPixels(png[3].wid, png[3].hei, GL_RGBA, GL_UNSIGNED_BYTE,
-                             png[3].rgba);
-                break;
-            }
-            case GridSpeedUp: {
-                glRasterPos2d(x * RESOLUTION, (y + 1) * RESOLUTION - 1);
-                glDrawPixels(png[3].wid, png[4].hei, GL_RGBA, GL_UNSIGNED_BYTE,
-                             png[4].rgba);
-                break;
-            }
-            default:
-                break;
-            }
+            glRasterPos2d(x * RESOLUTION, (y + 1) * RESOLUTION - 1);
+            glDrawPixels(png[pix].wid, png[pix].hei, GL_RGBA, GL_UNSIGNED_BYTE,
+                         png[pix].rgba);
         }
     }
 }
 bool Bitmap::Reachable(int x, int y) const {
     // convert pixel coordinate to grid
-
-    return true;
-    if (x <= 0 || x >= wid*RESOLUTION || y <= 0 || y >= hei*RESOLUTION){
+    if (x <= 0 || x >= wid * RESOLUTION || y <= 0 || y >= hei * RESOLUTION) {
         return false;
     }
     x = x / RESOLUTION;
     y = y / RESOLUTION;
-    
-    GridStatus status = GetPixel(x, y);
+
+    GridStatus status = GetGrid(x, y);
     if (status == GridDestructible || status == GridIndestructible) {
         return false;
     }
@@ -274,7 +291,7 @@ int main(void) {
             }
 
             cout << colorCode << ',';
-            bmp.SetPixel(px, py, colorCode);
+            bmp.SetGrid(px, py, colorCode);
         }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

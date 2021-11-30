@@ -4,32 +4,44 @@
 #include "crazyarcade.h"
 #include "map.h"
 
+#define EXPLODE_TIME 200
+#define DISAPPEAR_TIME 250
+
+enum BubbleDirection {
+    BubbleMid,
+    BubbleUpside,
+    BubbleDownside,
+    BubbleLeftside,
+    BubbleRightside
+};
+
 class Bubble {
+    // friend BubbleManager;
+
   private:
     int x, y;
-    int life_span = 20;
     int time_counter = 0;
-    Map *map;
+    int my_range = 1;
+    Bitmap *map;
+    bool ChangeSingleGrid(int target_x, int target_y,
+                          BubbleDirection direction);
 
   public:
-    Bubble(Map *map);
-    void SetLoc(int cur_x, int cur_y);
-    int Update(int range);
-    void Explode(int range);
-    void Draw();
+    Bubble(Bitmap *map_in, int range, int x_in, int y_in);
+    int Update();
 };
 
 class BubbleManager {
   private:
     int capacity = 1;
-    int range = 2;
-    std::queue<Bubble *> bubble_list;
-    Map *map;
+    int range = 1;
+    std::deque<Bubble *> bubble_list;
+    Bitmap *map;
 
   public:
-    BubbleManager(Map *map);
+    BubbleManager(Bitmap *map);
     ~BubbleManager();
-    void GetProps(int prop_status);
+    void AddProps(GridStatus prop_status);
     void UpdateBubbles();
     void LayBubble(int x, int y);
 };
