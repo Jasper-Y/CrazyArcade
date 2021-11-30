@@ -13,7 +13,7 @@ class GameManager {
     GameManager() {
         map = new Bitmap();
         p1 = new Player(100, 100, 1, map);
-        p2 = new Player(200, 200, 1, map);
+        p2 = new Player(800, 700, 1, map);
     }
 
     ~GameManager() {
@@ -156,41 +156,41 @@ int main(void) {
     while (terminate == 0) {
         std::unique_lock<std::mutex> lock(manager.buf_mutex);
         lock.unlock();
-        std::cout << "getting status...: " << FsGetKeyState(FSKEY_W) << std::endl;
-        // if (FsGetKeyState(FSKEY_W) != 0) {
-        //     PushCommand(&manager, lock, P1_FORWARD);
-        // }
-        // if (FsGetKeyState(FSKEY_S)) {
-        //     PushCommand(&manager, lock, P1_BACK);
-        // }
-        // if (FsGetKeyState(FSKEY_A)) {
-        //     PushCommand(&manager, lock, P1_LEFT);
-        // }
-        // if (FsGetKeyState(FSKEY_D)) {
-        //     PushCommand(&manager, lock, P1_RIGHT);
-        // }
-        // if (FsGetKeyState(FSKEY_UP)) {
-        //     PushCommand(&manager, lock, P2_FORWARD);
-        // }
-        // if (FsGetKeyState(FSKEY_DOWN)) {
-        //     PushCommand(&manager, lock, P2_BACK);
-        // }
-        // if (FsGetKeyState(FSKEY_LEFT)) {
-        //     PushCommand(&manager, lock, P2_LEFT);
-        // }
-        // if (FsGetKeyState(FSKEY_RIGHT)) {
-        //     PushCommand(&manager, lock, P2_RIGHT);
-        // }
-        // if (FsGetKeyState(FSKEY_SPACE)) {
-        //     PushCommand(&manager, lock, P1_PLACE);
-        // }
-        // if (FsGetKeyState(FSKEY_ENTER)) {
-        //     PushCommand(&manager, lock, P2_PLACE);
-        // }
-        // if (FsGetKeyState(FSKEY_ESC)) {
-        //     terminate = 1;
-        //     PushCommand(&manager, lock, USER_TERMINATE);
-        // }
+        FsPollDevice();
+        if (FsGetKeyState(FSKEY_W) != 0) {
+            PushCommand(&manager, lock, P1_FORWARD);
+        }
+        if (FsGetKeyState(FSKEY_S)) {
+            PushCommand(&manager, lock, P1_BACK);
+        }
+        if (FsGetKeyState(FSKEY_A)) {
+            PushCommand(&manager, lock, P1_LEFT);
+        }
+        if (FsGetKeyState(FSKEY_D)) {
+            PushCommand(&manager, lock, P1_RIGHT);
+        }
+        if (FsGetKeyState(FSKEY_UP)) {
+            PushCommand(&manager, lock, P2_FORWARD);
+        }
+        if (FsGetKeyState(FSKEY_DOWN)) {
+            PushCommand(&manager, lock, P2_BACK);
+        }
+        if (FsGetKeyState(FSKEY_LEFT)) {
+            PushCommand(&manager, lock, P2_LEFT);
+        }
+        if (FsGetKeyState(FSKEY_RIGHT)) {
+            PushCommand(&manager, lock, P2_RIGHT);
+        }
+        if (FsGetKeyState(FSKEY_SPACE)) {
+            PushCommand(&manager, lock, P1_PLACE);
+        }
+        if (FsGetKeyState(FSKEY_ENTER)) {
+            PushCommand(&manager, lock, P2_PLACE);
+        }
+        if (FsGetKeyState(FSKEY_ESC)) {
+            terminate = 1;
+            PushCommand(&manager, lock, USER_TERMINATE);
+        }
 
         if (!manager.IsPlaying()) {
             terminate = 1;
@@ -200,7 +200,7 @@ int main(void) {
         manager.Draw();
         FsSwapBuffers();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
     // Wait background thread until finishes
     background.join();

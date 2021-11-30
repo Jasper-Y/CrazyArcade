@@ -123,25 +123,49 @@ void Player::MovePlayer(Player_Heading h) {
     heading = h;
     int next_y = y, next_x = x;
     switch (h) {
-    case PlayerUp:
+    case PlayerUp: {
         // use ordinary coordinate system
         next_y = y - PLAYER_DT * v;
+        if (map->Reachable(x + RESOLUTION / 2, next_y - RESOLUTION / 2)) {
+            y = next_y;
+        }
         break;
-    case PlayerDown:
+    }
+    case PlayerDown: {
         next_y = y + PLAYER_DT * v;
+        if (map->Reachable(x + RESOLUTION / 2, next_y)) {
+            y = next_y;
+        }
         break;
-    case PlayerRight:
+    }
+    case PlayerRight: {
         next_x = x + PLAYER_DT * v;
+        if (y % RESOLUTION <= RESOLUTION / 3 && y % RESOLUTION > 0) {
+            if (!map->Reachable(next_x + RESOLUTION, y)) {
+                break;
+            }
+        }
+        if (map->Reachable(next_x + RESOLUTION, y - RESOLUTION / 2)) {
+            x = next_x;
+        }
         break;
-    case PlayerLeft:
+    }
+    case PlayerLeft: {
         next_x = x - PLAYER_DT * v;
+        if (y % RESOLUTION <= RESOLUTION / 3 && y % RESOLUTION > 0) {
+            if (!map->Reachable(next_x + RESOLUTION / 4, y)) {
+                break;
+            }
+        }
+        if (next_x < 0) {
+            break;
+        }
+        if (map->Reachable(next_x + RESOLUTION / 4, y - RESOLUTION / 2)) {
+            x = next_x;
+        }
         break;
     }
-    if (map->Reachable(next_x + RESOLUTION / 2, next_y - RESOLUTION / 2)) {
-        x = next_x;
-        y = next_y;
     }
-    printf("player1, x = %d, y = %d\n", x, y);
 }
 
 void Player::isDead() {
