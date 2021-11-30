@@ -107,11 +107,11 @@ bool Bubble::ChangeSingleGrid(int target_x, int target_y,
 int Bubble::Update() {
     time_counter++;
     bool re_update = false;
-    if (time_counter < EXPLODE_TIME) {
-        if ((re_update = ChangeSingleGrid(x, y, BubbleMid)) = false) {
-            return time_counter;
-        }
-    } else {
+
+    re_update = ChangeSingleGrid(x, y, BubbleMid);
+    if (!re_update && time_counter < EXPLODE_TIME) {
+        return time_counter;
+    } else if (!re_update) {
         for (int i = -my_range; i <= my_range; i++) {
             if (i == 0) {
                 continue;
