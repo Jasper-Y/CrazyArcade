@@ -4,8 +4,8 @@
 #include "crazyarcade.h"
 #include "map.h"
 
-#define EXPLODE_TIME 30
-#define DISAPPEAR_TIME 40
+#define EXPLODE_TIME 200
+#define DISAPPEAR_TIME 250
 
 enum BubbleDirection {
     BubbleMid,
@@ -16,7 +16,7 @@ enum BubbleDirection {
 };
 
 class Bubble {
-    friend BubbleManager;
+    // friend BubbleManager;
 
   private:
     int x, y;

@@ -27,7 +27,7 @@ Player::Player() {
     png[3].Decode(char_arr);
 
     map = nullptr;
-    // bubble_manager = BubbleManager();
+    bubble_manager = new BubbleManager(map);
 }
 
 void Player::SetLocation(int loc_x, int loc_y) {
@@ -68,7 +68,7 @@ Player::Player(int loc_x, int loc_y, int id, Bitmap *m) {
     png[3].Decode(char_arr);
     png[3].Flip();
 
-    // bubble_manager = BubbleManager();
+    bubble_manager = new BubbleManager(map);
 }
 
 void Player::Draw() const {
@@ -113,10 +113,11 @@ int Player::GetLocationY() const {
 // 	//TODO: to be implemented
 // }
 
-// void Player::LayBubble() {
-// 	//TODO: to be implemented
-// 	bubble_manager.LayBubble(x, y);
-// }
+void Player::LayBubble() {
+    // TODO: to be implemented
+    bubble_manager->LayBubble((x + RESOLUTION / 2) / RESOLUTION,
+                              (y - RESOLUTION / 2) / RESOLUTION);
+}
 
 void Player::MovePlayer(Player_Heading h) {
     heading = h;
@@ -136,7 +137,7 @@ void Player::MovePlayer(Player_Heading h) {
         next_x = x - PLAYER_DT * v;
         break;
     }
-    if (map->Reachable(next_x, next_y)) {
+    if (map->Reachable(next_x + RESOLUTION / 2, next_y - RESOLUTION / 2)) {
         x = next_x;
         y = next_y;
     }

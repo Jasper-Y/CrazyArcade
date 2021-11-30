@@ -12,7 +12,7 @@ enum Player_Heading { PlayerUp, PlayerDown, PlayerRight, PlayerLeft };
 
 // #ifndef BUBBLE_MANAGER
 // #define BUBBLE_MANAGER
-// #include "bubbleManager.h"
+#include "bubble.h"
 
 // #endif
 
@@ -22,7 +22,7 @@ class Player {
     double v;               // velocity of player
     Player_State state;     // state of player
     Player_Heading heading; // heading direction of player
-    // BubbleManager bubble_manager;
+    BubbleManager *bubble_manager;
     Bitmap *map;
     int player_id; // for decoder
     YsRawPngDecoder
@@ -36,7 +36,10 @@ class Player {
 
     // void AddProps(Prop prop);
     // void DrawPlayer() const;
-    // void LayBubble();
+    void Update() {
+        bubble_manager->UpdateBubbles();
+    };
+    void LayBubble();
     void Draw() const;
     void MovePlayer(Player_Heading h);
     void isDead();

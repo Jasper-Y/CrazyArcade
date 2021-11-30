@@ -37,6 +37,8 @@ class GameManager {
      */
     bool Update(void) {
         // @todo: update all attributes
+        p1->Update();
+        p2->Update();
         return true;
     }
 
@@ -73,7 +75,7 @@ void ExecuteCommand(GameManager *manager) {
             case P1_LEFT:
                 manager->p1->MovePlayer(PlayerLeft);
                 break;
-            case P1_RIGHT: 
+            case P1_RIGHT:
                 manager->p1->MovePlayer(PlayerRight);
                 break;
                 // {
@@ -84,6 +86,7 @@ void ExecuteCommand(GameManager *manager) {
             case P1_PLACE: {
                 printf("P1 place bubble: %d\n", cur_cmd);
                 // @TODO: call player1 LayBubble
+                manager->p1->LayBubble();
                 break;
             }
             case P2_FORWARD:
@@ -95,7 +98,7 @@ void ExecuteCommand(GameManager *manager) {
             case P2_LEFT:
                 manager->p2->MovePlayer(PlayerLeft);
                 break;
-            case P2_RIGHT: 
+            case P2_RIGHT:
                 manager->p2->MovePlayer(PlayerRight);
                 break;
             //     {
@@ -106,6 +109,7 @@ void ExecuteCommand(GameManager *manager) {
             case P2_PLACE: {
                 printf("P2 place bubble: %d\n", cur_cmd);
                 // @TODO: call player2 LayBubble
+                manager->p2->LayBubble();
                 break;
             }
             default: {
@@ -117,7 +121,7 @@ void ExecuteCommand(GameManager *manager) {
 
             // @TODO: update state
             // manager->SetPlaying(some_return_state);
-            if (!manager->IsPlaying() || manager->Update()) {
+            if (!manager->IsPlaying() || !manager->Update()) {
                 printf("[Game overrrr]\n");
                 break;
             }
@@ -128,6 +132,9 @@ void ExecuteCommand(GameManager *manager) {
 
             // Represent the operation cost for rendering
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        if (!manager->IsPlaying() || !manager->Update()) {
+            printf("[Game overrrr]\n");
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }

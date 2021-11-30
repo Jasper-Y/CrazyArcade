@@ -185,13 +185,13 @@ void Bitmap::Create(int w, int h) {
 void Bitmap::SetGrid(int x, int y, GridStatus p) {
     if (0 <= x && x < wid && 0 <= y && y < hei) {
         pix[y * wid + x] = p;
-        cout << p << "setpix"
-             << "\n";
+        // cout << p << "setpix"
+        //      << "\n";
     }
-    for (int i = 0; i < wid * hei; i++) {
-        cout << int(pix[i]) << ",";
-    }
-    cout << "\n";
+    // for (int i = 0; i < wid * hei; i++) {
+    //     cout << int(pix[i]) << ",";
+    // }
+    // cout << "\n";
 }
 
 GridStatus Bitmap::GetGrid(int x, int y) const {

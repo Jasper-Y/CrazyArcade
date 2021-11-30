@@ -1,6 +1,6 @@
 # make sure you have the data files and the YS libraries installed
 
-des_path="./Run/"
+des_path=""
 install_path="test.app/Contents/MacOS/test"
 
 while getopts "p:" optname
@@ -19,6 +19,6 @@ cp Data/Map/* $des_path
 cd $des_path
 clang++ map.cpp main.cpp fssimplewindowcpp.cpp fssimplewindowobjc.o \
         ysglfontdata.c yspng.cpp yssimplesound.cpp \
-        player.cpp \
+        player.cpp bubble.cpp \
         yssimplesound_macosx_objc.o -framework cocoa -framework opengl \
         -framework AVFoundation -o $install_path -std=c++11 -Wno-everything
