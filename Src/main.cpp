@@ -13,7 +13,7 @@ class GameManager {
     GameManager() {
         map = new Bitmap();
         p1 = new Player(100, 100, 1, map);
-        p2 = new Player(200, 200, 1, map);
+        p2 = new Player(800, 700, 1, map);
     }
 
     ~GameManager() {
@@ -140,6 +140,12 @@ void ExecuteCommand(GameManager *manager) {
     }
 }
 
+void PushCommand(GameManager *manager, std::unique_lock<std::mutex> &my_lock, CommandType cmd){
+    my_lock.lock();
+    manager->cmd_buf.push(cmd);
+    my_lock.unlock();
+}
+
 int main(void) {
     srand(time(nullptr));
     GameManager manager;
@@ -148,55 +154,42 @@ int main(void) {
     int key, terminate = 0;
     CommandType command;
     while (terminate == 0) {
-        command = INVALID;
+        std::unique_lock<std::mutex> lock(manager.buf_mutex);
+        lock.unlock();
         FsPollDevice();
-        key = FsInkey();
-        switch (key) {
-        case FSKEY_ESC: {
+        if (FsGetKeyState(FSKEY_W) != 0) {
+            PushCommand(&manager, lock, P1_FORWARD);
+        }
+        if (FsGetKeyState(FSKEY_S)) {
+            PushCommand(&manager, lock, P1_BACK);
+        }
+        if (FsGetKeyState(FSKEY_A)) {
+            PushCommand(&manager, lock, P1_LEFT);
+        }
+        if (FsGetKeyState(FSKEY_D)) {
+            PushCommand(&manager, lock, P1_RIGHT);
+        }
+        if (FsGetKeyState(FSKEY_UP)) {
+            PushCommand(&manager, lock, P2_FORWARD);
+        }
+        if (FsGetKeyState(FSKEY_DOWN)) {
+            PushCommand(&manager, lock, P2_BACK);
+        }
+        if (FsGetKeyState(FSKEY_LEFT)) {
+            PushCommand(&manager, lock, P2_LEFT);
+        }
+        if (FsGetKeyState(FSKEY_RIGHT)) {
+            PushCommand(&manager, lock, P2_RIGHT);
+        }
+        if (FsGetKeyState(FSKEY_SPACE)) {
+            PushCommand(&manager, lock, P1_PLACE);
+        }
+        if (FsGetKeyState(FSKEY_ENTER)) {
+            PushCommand(&manager, lock, P2_PLACE);
+        }
+        if (FsGetKeyState(FSKEY_ESC)) {
             terminate = 1;
-            command = USER_TERMINATE;
-            printf("[INFO] Received esc\n");
-            break;
-        }
-        case FSKEY_W:
-            command = P1_FORWARD;
-            break;
-        case FSKEY_S:
-            command = P1_BACK;
-            break;
-        case FSKEY_A:
-            command = P1_LEFT;
-            break;
-        case FSKEY_D:
-            command = P1_RIGHT;
-            break;
-        case FSKEY_UP:
-            command = P2_FORWARD;
-            break;
-        case FSKEY_DOWN:
-            command = P2_BACK;
-            break;
-        case FSKEY_LEFT:
-            command = P2_LEFT;
-            break;
-        case FSKEY_RIGHT:
-            command = P2_RIGHT;
-            break;
-        case FSKEY_SPACE: {
-            command = P1_PLACE;
-            break;
-        }
-        case FSKEY_ENTER: {
-            command = P2_PLACE;
-            break;
-        }
-        default:
-            break;
-        }
-
-        if (command != INVALID) {
-            std::lock_guard<std::mutex> lock(manager.buf_mutex);
-            manager.cmd_buf.push(command);
+            PushCommand(&manager, lock, USER_TERMINATE);
         }
 
         if (!manager.IsPlaying()) {
@@ -207,7 +200,7 @@ int main(void) {
         manager.Draw();
         FsSwapBuffers();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
     // Wait background thread until finishes
     background.join();
