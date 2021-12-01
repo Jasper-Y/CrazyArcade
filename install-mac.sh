@@ -1,6 +1,6 @@
 # make sure you have the data files and the YS libraries installed
 
-des_path=""
+des_path="./runs/"
 install_path="test.app/Contents/MacOS/test"
 
 while getopts "p:" optname
@@ -15,6 +15,7 @@ echo "Copying files to $des_path ..."
 cp Src/* $des_path
 cp Inc/* $des_path
 cp Data/Map/* $des_path
+cp Data/Sound/* $des_path
 
 cd $des_path
 clang++ map.cpp main.cpp fssimplewindowcpp.cpp fssimplewindowobjc.o \

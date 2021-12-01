@@ -30,6 +30,7 @@ Player::Player() {
 
     map = nullptr;
     bubble_manager = new BubbleManager(map);
+
 }
 
 void Player::SetLocation(int loc_x, int loc_y) {
@@ -98,10 +99,6 @@ void Player::Draw() const {
                  png[i].rgba);
 }
 
-// Player::~Player(){
-
-// }
-
 int Player::GetLocationX() const {
     return x;
 }
@@ -109,14 +106,6 @@ int Player::GetLocationX() const {
 int Player::GetLocationY() const {
     return y;
 }
-
-// void Player::AddProps(Prop prop) {
-// 	// TODO: to be implemented
-// }
-
-// void Player::DrawPlayer() const {
-// 	//TODO: to be implemented
-// }
 
 void Player::LayBubble() {
     // TODO: to be implemented

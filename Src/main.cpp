@@ -1,9 +1,9 @@
 // clang-format off
 #include "crazyarcade.h"
-// #include "bubble.h"
+#include "bubble.h"
 #include "map.h"
-// clang-format on
 #include "player.h"
+// clang-format on
 
 class GameManager {
   private:
@@ -13,7 +13,7 @@ class GameManager {
     GameManager() {
         map = new Bitmap();
         p1 = new Player(100, 100, 1, map);
-        p2 = new Player(800, 700, 1, map);
+        p2 = new Player(800, 700, 2, map);
     }
 
     ~GameManager() {
@@ -36,7 +36,6 @@ class GameManager {
      * @return false if the game is over
      */
     bool Update(void) {
-        // @todo: update all attributes
         if (p1->Update() == PlayerDead) {
             is_playing = false;
             return false;
@@ -54,7 +53,6 @@ class GameManager {
         p2->Draw();
     }
 
-    // @TODO: Add player, map, and other objects
     Bitmap *map;
     Player *p1, *p2;
     std::queue<CommandType> cmd_buf;
@@ -116,10 +114,6 @@ void ExecuteCommand(GameManager *manager) {
                 break;
             }
 
-            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            // manager->Draw();
-            // FsSwapBuffers();
-
             // Represent the operation cost for rendering
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
@@ -143,6 +137,18 @@ int main(void) {
     srand(time(nullptr));
     GameManager manager;
     FsOpenWindow(0, 0, RESOLUTION * COLUMN, RESOLUTION * ROW, 1);
+
+    // bgm player
+    YsSoundPlayer BGM_player;
+    YsSoundPlayer::SoundData wav;
+    char bgm_file_name[] = "bgm.wav";
+    if (YSOK != wav.LoadWav(bgm_file_name)) {
+        printf("failed to read %s\n", bgm_file_name);
+    }else {
+        BGM_player.Start();
+        BGM_player.PlayBackground(wav);
+    }
+
     std::thread background(&ExecuteCommand, &manager);
     int key, terminate = 0;
     CommandType command;

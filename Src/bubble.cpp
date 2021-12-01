@@ -4,6 +4,7 @@ Bubble::Bubble(Bitmap *map_in, int range, int x_in, int y_in)
     : map(map_in), my_range(range), x(x_in), y(y_in) {
     // Initialize to small, to make it big in first update
     map->SetGrid(x, y, GridBubbleWaitSmall);
+    boom_wav.LoadWav("boom.wav");
 }
 
 // Return true if it's affected by neighbors, so re-update once
@@ -12,9 +13,6 @@ bool Bubble::ChangeSingleGrid(int target_x, int target_y,
     GridStatus pre_status = map->GetGrid(target_x, target_y);
     switch (pre_status) {
     case GridFree: {
-        // Entering the exploding status or the exploding status is changed by
-        // other bubbles (it is redundant to check the DISAPPEAR_TIME, just
-        // leave it temporarily)
         if (time_counter < EXPLODE_TIME && direction == BubbleMid) {
             if (time_counter % 2 == 1) {
                 map->SetGrid(x, y, GridBubbleWaitBig);
@@ -106,137 +104,79 @@ bool Bubble::ChangeSingleGrid(int target_x, int target_y,
 
 int Bubble::Update() {
     time_counter++;
+    if (time_counter == EXPLODE_TIME) {
+        if (boom_player.IsPlaying(boom_wav)){
+            boom_player.End();
+        }
+        boom_player.Start();
+        boom_player.PlayOneShot(boom_wav);
+    }
     bool re_update = false;
-    // bool destroy_flag = false;
     re_update = ChangeSingleGrid(x, y, BubbleMid);
     if (!re_update && time_counter < EXPLODE_TIME) {
         return time_counter;
     } else if (!re_update) {
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x, y + i) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             if ((re_update = ChangeSingleGrid(x, y + i, BubbleUpside)) ==
                 true) {
                 break;
             }
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x, y - i) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             if ((re_update = ChangeSingleGrid(x, y - i, BubbleDownside)) ==
                 true) {
                 break;
             }
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x + i, y) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             if ((re_update = ChangeSingleGrid(x + i, y, BubbleRightside)) ==
                 true) {
                 break;
             }
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x - i, y) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             if ((re_update = ChangeSingleGrid(x - i, y, BubbleLeftside)) ==
                 true) {
                 break;
             }
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
     }
     if (re_update) {
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x, y + i) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             ChangeSingleGrid(x, y + i, BubbleUpside);
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x, y - i) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             ChangeSingleGrid(x, y - i, BubbleDownside);
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x + i, y) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             ChangeSingleGrid(x + i, y, BubbleRightside);
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x - i, y) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             ChangeSingleGrid(x - i, y, BubbleLeftside);
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
     }
     return time_counter;
@@ -244,6 +184,8 @@ int Bubble::Update() {
 
 BubbleManager::BubbleManager(Bitmap *map) {
     this->map = map;
+    // boom_wav.LoadWav("boom.wav");
+    bubble_wav.LoadWav("bubble.wav");
 }
 
 BubbleManager::~BubbleManager() {
@@ -287,4 +229,9 @@ void BubbleManager::LayBubble(int x, int y) {
     }
     Bubble *new_bubble = new Bubble(map, range, x, y);
     bubble_list.push_back(new_bubble);
+    if (bubble_player.IsPlaying(bubble_wav)) {
+        bubble_player.End();
+    }
+    bubble_player.Start();
+    bubble_player.PlayOneShot(bubble_wav);
 }

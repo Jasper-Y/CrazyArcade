@@ -185,13 +185,7 @@ void Bitmap::Create(int w, int h) {
 void Bitmap::SetGrid(int x, int y, GridStatus p) {
     if (0 <= x && x < wid && 0 <= y && y < hei) {
         pix[y * wid + x] = p;
-        // cout << p << "setpix"
-        //      << "\n";
     }
-    // for (int i = 0; i < wid * hei; i++) {
-    //     cout << int(pix[i]) << ",";
-    // }
-    // cout << "\n";
 }
 
 GridStatus Bitmap::GetGrid(int x, int y) const {
@@ -246,60 +240,3 @@ bool Bitmap::Reachable(int x, int y) const {
     return true;
 }
 
-/*
-int main(void) {
-    int wid = COLUMN, hei = ROW;
-
-    Bitmap bmp;
-
-    FsOpenWindow(0, 0, wid * RESOLUTION, hei * RESOLUTION, 1);
-
-    for (;;) {
-        FsPollDevice();
-        auto key = FsInkey();
-        int lb, mb, rb, mx, my;
-        auto evt = FsGetMouseEvent(lb, mb, rb, mx, my);
-
-        if (FSKEY_ESC == key) {
-            break;
-        }
-        if (FSKEY_0 <= key && key <= FSKEY_7) {
-            GridStatus colorCode;
-            int px = mx / RESOLUTION;
-            int py = my / RESOLUTION;
-            switch (key) {
-            case FSKEY_0:
-                colorCode = GridFree;
-                break;
-            case FSKEY_1:
-                colorCode = GridIndestructible;
-                break;
-            case FSKEY_2:
-                colorCode = GridDestructible;
-                break;
-            case FSKEY_3:
-                colorCode = GridSpeedUp;
-                break;
-            case FSKEY_4:
-                colorCode = GridMoreBubble;
-                break;
-            case FSKEY_5:
-                colorCode = GridLongerBubble;
-                break;
-            default:
-                break;
-            }
-
-            cout << colorCode << ',';
-            bmp.SetGrid(px, py, colorCode);
-        }
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        bmp.Draw();
-        FsSwapBuffers();
-
-        FsSleep(25);
-    }
-}
-*/
