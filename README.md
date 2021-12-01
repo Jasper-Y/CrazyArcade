@@ -17,6 +17,18 @@ Members: Zhengyang Zou, Jiajun Ji, Chengji Yu, Yiping Dong, Dijing Zhang
       * UP/DOWN/LEFT/RIGHT -- Move  
       * ENTER -- Place Bubble  
 
+### Quick Start
+* **Mac**
+    ```
+    cd Exec
+    ./test.app/Contents/MacOS/test
+    ```
+* **Win**
+
+    Double click the executable file `test.exe` in `Exec` folder.
+
+
+
 ### Install
 * **Mac**
     ```
@@ -34,9 +46,15 @@ Members: Zhengyang Zou, Jiajun Ji, Chengji Yu, Yiping Dong, Dijing Zhang
     
 
 ### Code Construction
-<img src="Data/Readme/code_structure.png" width="60%">
+<p align="center">
+  <img src="Data/Readme/code_structure.png" width="80%">
+</p>
+
 
 
 ### Work Flow
-<img src="Data/Readme/flow_chart.png" width="60%">
+<p align="center">
+  <img src="Data/Readme/flow_chart.png" width="80%">
+</p>
+
 

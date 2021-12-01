@@ -1230,7 +1230,23 @@ YsSoundPlayer::Stream::~Stream()
 }
 
 
+#include <algorithm>
+
+
+
 #include <stdio.h>
+
+
+
+#define _WINSOCKAPI_
+
+#include <windows.h>
+
+#include <mmsystem.h>
+
+#include <dsound.h>
+
+
 
 #include "yssimplesound.h"
 
@@ -1238,43 +1254,23 @@ YsSoundPlayer::Stream::~Stream()
 
 
 
-struct YsAVAudioEngine;
+#pragma comment(lib,"user32.lib")
 
-struct YsAVAudioPlayer;
+#pragma comment(lib,"winmm.lib")
 
+#pragma comment(lib,"kernel32.lib")
 
-
-extern "C" struct YsAVAudioEngine *YsSimpleSound_OSX_CreateAudioEngine(void);
-
-extern "C" void YsSimpleSound_OSX_DeleteAudioEngine(struct YsAVAudioEngine *engine);
+#pragma comment(lib,"dsound.lib")
 
 
 
 
 
+#ifdef min
 
+#undef min // ****ing windows.h namespace contamination.
 
-extern "C" struct YsAVSound *YsSimpleSound_OSX_CreateSound(struct YsAVAudioEngine *engineInfoPtr,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels);
-
-extern "C" void YsSimpleSound_OSX_DeleteSound(struct YsAVSound *ptr);
-
-extern "C" void YsSimpleSound_OSX_PlayOneShot(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
-
-extern "C" void YsSimpleSound_OSX_PlayBackground(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
-
-extern "C" void YsSimpleSound_OSX_SetVolume(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr,float vol);
-
-extern "C" void YsSimpleSound_OSX_Stop(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
-
-extern "C" void YsSimpleSound_OSX_Pause(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
-
-extern "C" void YsSimpleSound_OSX_Resume(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
-
-extern "C" bool YsSimpleSound_OSX_IsPlaying(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
-
-extern "C" double YsSimpleSound_OSX_GetCurrentPosition(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
-
-
+#endif
 
 
 
@@ -1286,19 +1282,91 @@ class YsSoundPlayer::APISpecificData
 
 public:
 
+	/*!
+
+	Why do I have to find a window handle?  It is because DirectSound API is so badly designed that it requires a window handle.
+
+	What's even more stupid is that the window needs to be active and forward to play sound.  I cannot get away with creating a
+
+	dummy hidden window.  After wasting days of google search, I concluded that DirectSound API is designed by an incompetent
+
+	programmer.
+
+
+
+	Window and sound need to be independent.  Sound can optionally be associated with a window, but the association must not be mandatory.
+
+	Unrelated modules must be independent.  It is such a basic.
+
+
+
+	I mostly write a single-window application.  Therefore I can live with it.  But, if there are multiple windows, the sound
+
+	stops when a window that is associated with DirectSound becomes inactive.
+
+
+
+	DirectSound is like an opps library.  It might really be designed by an inexperienced graduate student.  Who knows.
+
+	*/
+
+	class MainWindowFinder
+
+	{
+
+	public:
+
+		/*! This function finds a handle of the largest window that is visible and is associated with the current process Id.
+
+		    This window may not be an application main window.  But, what else can I do?
+
+		    This function can be used for giving a window handle to a badly-designed APIs such as Direct Sound API.
+
+		*/
+
+		static HWND Find(HWND hExcludeWnd=nullptr);
+
+	private:
+
+		static void SearchTopLevelWindow(HWND &hWndLargest,int &largestWndArea,HWND hWnd,DWORD procId,HWND hWndExclude);
+
+	};
+
+
+
+
+
+	HWND hWndMain;
+
+	HWND hOwnWnd;
+
+	LPDIRECTSOUND8 dSound8;
+
+
+
 	APISpecificData();
 
 	~APISpecificData();
 
 	void CleanUp(void);
 
-	YSRESULT Start(void);
+	void Start(void);
 
-	YSRESULT End(void);
+	void End(void);
 
 
 
-	YsAVAudioEngine *enginePtr;
+	void RefetchMainWindowHandle(void);
+
+
+
+private:
+
+	void OpenDummyWindow(void);
+
+	void DestroyDummyWindow(void);
+
+	static LRESULT WINAPI OwnWindowFunc(HWND hWnd,UINT msg,WPARAM wp,LPARAM lp);
 
 };
 
@@ -1310,6 +1378,10 @@ class YsSoundPlayer::SoundData::APISpecificDataPerSoundData
 
 public:
 
+	LPDIRECTSOUNDBUFFER dSoundBuf;
+
+
+
 	APISpecificDataPerSoundData();
 
 	~APISpecificDataPerSoundData();
@@ -1318,7 +1390,7 @@ public:
 
 
 
-	YsAVSound *sndPtr;
+	void CreateBuffer(LPDIRECTSOUND8 dSound8,SoundData &dat);
 
 };
 
@@ -1336,11 +1408,121 @@ public:
 
 
 
+// Source: http://stackoverflow.com/questions/6202547/win32-get-main-wnd-handle-of-application
+
+HWND YsSoundPlayer::APISpecificData::MainWindowFinder::Find(HWND hExcludeWnd)
+
+{
+
+	HWND hWndLargest=NULL;
+
+	int wndArea=0;
+
+	SearchTopLevelWindow(hWndLargest,wndArea,NULL,GetCurrentProcessId(),hExcludeWnd);
+
+	return hWndLargest;
+
+}
+
+void YsSoundPlayer::APISpecificData::MainWindowFinder::SearchTopLevelWindow(HWND &hWndLargest,int &largestWndArea,HWND hWnd,DWORD procId,HWND hWndExclude)
+
+{
+
+	if(nullptr!=hWndExclude && hWnd==hWndExclude)
+
+	{
+
+		return;
+
+	}
+
+
+
+	DWORD windowProcId;
+
+	GetWindowThreadProcessId(hWnd,&windowProcId);
+
+	if(windowProcId==procId)
+
+	{
+
+		char str[256];
+
+		GetWindowTextA(hWnd,str,255);
+
+		printf("hWnd=%08x Title=%s\n",(int)hWnd,str);
+
+		printf("IsVisible=%d\n",IsWindowVisible(hWnd));
+
+
+
+		RECT rc;
+
+		GetWindowRect(hWnd,&rc);
+
+
+
+		int area=((rc.right-rc.left)*(rc.bottom-rc.top));
+
+		if(0>area)
+
+		{
+
+			area=-area;
+
+		}
+
+		printf("Area=%d square pixels. (%d x %d)\n",area,(rc.right-rc.left),(rc.bottom-rc.top));
+
+
+
+		if(TRUE==IsWindowVisible(hWnd) && (NULL==hWndLargest || largestWndArea<area))
+
+		{
+
+			hWndLargest=hWnd;
+
+			largestWndArea=area;
+
+		}
+
+		return;
+
+	}
+
+
+
+	HWND hWndChild=NULL;
+
+	while(NULL!=(hWndChild=FindWindowEx(hWnd,hWndChild,NULL,NULL))!=NULL)
+
+	{
+
+		SearchTopLevelWindow(hWndLargest,largestWndArea,hWndChild,procId,hWndExclude);
+
+	}
+
+}
+
+
+
+////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
 YsSoundPlayer::APISpecificData::APISpecificData()
 
 {
 
-	enginePtr=nullptr;
+	hWndMain=nullptr;
+
+	hOwnWnd=nullptr;
+
+	dSound8=nullptr;
 
 	CleanUp();
 
@@ -1360,47 +1542,103 @@ void YsSoundPlayer::APISpecificData::CleanUp(void)
 
 {
 
-	if(nullptr!=enginePtr)
+	hWndMain=nullptr;
+
+	if(nullptr!=dSound8)
 
 	{
 
-		printf("Ending AVAudioEngine.\n");
+		dSound8->Release();
 
-		YsSimpleSound_OSX_DeleteAudioEngine(enginePtr);
-
-		enginePtr=nullptr;
+		dSound8=nullptr;
 
 	}
+
+
+
+	DestroyDummyWindow();
 
 }
 
 
 
-YSRESULT YsSoundPlayer::APISpecificData::Start(void)
-
-{
-
-	if(nullptr==enginePtr)
-
-	{
-
-		printf("Starting AVAudioEngine.\n");
-
-		enginePtr=YsSimpleSound_OSX_CreateAudioEngine();
-
-	}
-
-	return YSOK;
-
-}
-
-YSRESULT YsSoundPlayer::APISpecificData::End(void)
+void YsSoundPlayer::APISpecificData::Start(void)
 
 {
 
 	CleanUp();
 
-	return YSOK;
+
+
+	MainWindowFinder mainWindowFinder;
+
+	hWndMain=mainWindowFinder.Find();
+
+	if(nullptr==hWndMain && nullptr==hOwnWnd)
+
+	{
+
+		OpenDummyWindow();
+
+	}
+
+	if(DS_OK==DirectSoundCreate8(NULL,&dSound8,NULL))
+
+	{
+
+		if(nullptr!=hWndMain)
+
+		{
+
+			dSound8->SetCooperativeLevel(hWndMain,DSSCL_PRIORITY);
+
+		}
+
+		else if(nullptr!=hOwnWnd)
+
+		{
+
+			dSound8->SetCooperativeLevel(hOwnWnd,DSSCL_PRIORITY);
+
+		}
+
+	}
+
+}
+
+void YsSoundPlayer::APISpecificData::End(void)
+
+{
+
+	CleanUp();
+
+}
+
+
+
+void YsSoundPlayer::APISpecificData::RefetchMainWindowHandle(void)
+
+{
+
+	if(nullptr!=hOwnWnd && nullptr==hWndMain)
+
+	{
+
+		MainWindowFinder mainWindowFinder;
+
+		hWndMain=mainWindowFinder.Find(hOwnWnd);
+
+		if(nullptr!=hWndMain)
+
+		{
+
+			dSound8->SetCooperativeLevel(hWndMain,DSSCL_PRIORITY);
+
+			DestroyDummyWindow();
+
+		}
+
+	}
 
 }
 
@@ -1432,7 +1670,9 @@ YSRESULT YsSoundPlayer::StartAPISpecific(void)
 
 {
 
-	return api->Start();
+	api->Start();
+
+	return YSOK;
 
 }
 
@@ -1440,15 +1680,51 @@ YSRESULT YsSoundPlayer::EndAPISpecific(void)
 
 {
 
-	return api->End();
+	api->End();
+
+	return YSOK;
 
 }
 
 
 
-void YsSoundPlayer::KeepPlayingAPISpecific(void)
+void YsSoundPlayer::SetVolumeAPISpecific(SoundData &dat,float vol)
 
 {
+
+	if(nullptr!=dat.api->dSoundBuf)
+
+	{
+
+		vol=sqrt(vol);
+
+
+
+		float dB=(float)DSBVOLUME_MAX*vol+(float)DSBVOLUME_MIN*(1.0-vol);
+
+		long atten=(long)dB;
+
+		if(DSBVOLUME_MAX<atten)
+
+		{
+
+			atten=DSBVOLUME_MAX;
+
+		}
+
+		if(atten<DSBVOLUME_MIN)
+
+		{
+
+			atten=DSBVOLUME_MIN;
+
+		}
+
+		// printf("%d\n",atten);
+
+		dat.api->dSoundBuf->SetVolume(atten);
+
+	}
 
 }
 
@@ -1458,13 +1734,25 @@ YSRESULT YsSoundPlayer::PlayOneShotAPISpecific(SoundData &dat)
 
 {
 
-	if(nullptr!=dat.api->sndPtr)
+	if(nullptr==api->hWndMain && nullptr!=api->hOwnWnd)
 
 	{
 
-		YsSimpleSound_OSX_SetVolume(api->enginePtr,dat.api->sndPtr,dat.playBackVolume);
+		api->RefetchMainWindowHandle();
 
-		YsSimpleSound_OSX_PlayOneShot(api->enginePtr,dat.api->sndPtr);
+	}
+
+
+
+	if(nullptr!=dat.api->dSoundBuf)
+
+	{
+
+		SetVolumeAPISpecific(dat,dat.playBackVolume);
+
+		dat.api->dSoundBuf->SetCurrentPosition(0);
+
+		dat.api->dSoundBuf->Play(0,0xc0000000,0);
 
 		return YSOK;
 
@@ -1480,13 +1768,35 @@ YSRESULT YsSoundPlayer::PlayBackgroundAPISpecific(SoundData &dat)
 
 {
 
-	if(nullptr!=dat.api->sndPtr)
+	if(nullptr==api->hWndMain && nullptr!=api->hOwnWnd)
 
 	{
 
-		YsSimpleSound_OSX_SetVolume(api->enginePtr,dat.api->sndPtr,dat.playBackVolume);
+		api->RefetchMainWindowHandle();
 
-		YsSimpleSound_OSX_PlayBackground(api->enginePtr,dat.api->sndPtr);
+	}
+
+
+
+	if(nullptr!=dat.api->dSoundBuf)
+
+	{
+
+		DWORD sta;
+
+		dat.api->dSoundBuf->GetStatus(&sta);
+
+		if(0==(sta&DSBSTATUS_PLAYING))
+
+		{
+
+			SetVolumeAPISpecific(dat,dat.playBackVolume);
+
+			dat.api->dSoundBuf->SetCurrentPosition(0);
+
+			dat.api->dSoundBuf->Play(0,0xc0000000,DSBPLAY_LOOPING);
+
+		}
 
 		return YSOK;
 
@@ -1502,11 +1812,21 @@ YSBOOL YsSoundPlayer::IsPlayingAPISpecific(const SoundData &dat) const
 
 {
 
-	if(nullptr!=dat.api->sndPtr && YsSimpleSound_OSX_IsPlaying(api->enginePtr,dat.api->sndPtr))
+	if(nullptr!=dat.api->dSoundBuf)
 
 	{
 
-		return YSTRUE;
+		DWORD sta;
+
+		dat.api->dSoundBuf->GetStatus(&sta);
+
+		if(0!=(sta&DSBSTATUS_PLAYING))
+
+		{
+
+			return YSTRUE;
+
+		}
 
 	}
 
@@ -1516,15 +1836,57 @@ YSBOOL YsSoundPlayer::IsPlayingAPISpecific(const SoundData &dat) const
 
 
 
+void YsSoundPlayer::PauseAPISpecific(SoundData &dat)
+
+{
+
+	if(nullptr!=dat.api->dSoundBuf)
+
+	{
+
+		dat.api->dSoundBuf->Stop();
+
+	}
+
+}
+
+void YsSoundPlayer::ResumeAPISpecific(SoundData &dat)
+
+{
+
+	if(nullptr==api->hWndMain && nullptr!=api->hOwnWnd)
+
+	{
+
+		api->RefetchMainWindowHandle();
+
+	}
+
+	if(nullptr!=dat.api->dSoundBuf)
+
+	{
+
+		dat.api->dSoundBuf->Play(0,0xc0000000,0);
+
+	}
+
+}
+
+
+
 double YsSoundPlayer::GetCurrentPositionAPISpecific(const SoundData &dat) const
 
 {
 
-	if(nullptr!=dat.api->sndPtr)
+	DWORD playCursor,writeCursor;
+
+	if(nullptr!=dat.api->dSoundBuf && DS_OK==dat.api->dSoundBuf->GetCurrentPosition(&playCursor,&writeCursor))
 
 	{
 
-		return YsSimpleSound_OSX_GetCurrentPosition(api->enginePtr,dat.api->sndPtr);
+		playCursor/=(dat.BytePerSample()*dat.GetNumChannel());
+
+		return ((double)playCursor)/(double)dat.PlayBackRate();
 
 	}
 
@@ -1538,11 +1900,17 @@ void YsSoundPlayer::StopAPISpecific(SoundData &dat)
 
 {
 
-	if(nullptr!=dat.api->sndPtr)
+	if(nullptr!=dat.api->dSoundBuf)
 
 	{
 
-		YsSimpleSound_OSX_Stop(api->enginePtr,dat.api->sndPtr);
+		dat.api->dSoundBuf->Stop();
+
+		// Memo: IDirectSoundBuffer::Stop() actually pauses playing.
+
+		//       It does not rewind.  Therefore, to play from the head of the wave,
+
+		//       IDirectSoundBuffer::SetCurrentPosition(0) must be called before playing.
 
 	}
 
@@ -1550,49 +1918,9 @@ void YsSoundPlayer::StopAPISpecific(SoundData &dat)
 
 
 
-void YsSoundPlayer::PauseAPISpecific(SoundData &dat)
+void YsSoundPlayer::KeepPlayingAPISpecific(void)
 
 {
-
-	if(nullptr!=dat.api->sndPtr)
-
-	{
-
-		YsSimpleSound_OSX_Pause(api->enginePtr,dat.api->sndPtr);
-
-	}
-
-}
-
-
-
-void YsSoundPlayer::ResumeAPISpecific(SoundData &dat)
-
-{
-
-	if(nullptr!=dat.api->sndPtr)
-
-	{
-
-		YsSimpleSound_OSX_Resume(api->enginePtr,dat.api->sndPtr);
-
-	}
-
-}
-
-
-
-void YsSoundPlayer::SetVolumeAPISpecific(SoundData &dat,float vol)
-
-{
-
-	if(nullptr!=dat.api->sndPtr)
-
-	{
-
-		YsSimpleSound_OSX_SetVolume(api->enginePtr,dat.api->sndPtr,vol);
-
-	}
 
 }
 
@@ -1606,7 +1934,7 @@ YsSoundPlayer::SoundData::APISpecificDataPerSoundData::APISpecificDataPerSoundDa
 
 {
 
-	sndPtr=nullptr;
+	dSoundBuf=nullptr;
 
 	CleanUp();
 
@@ -1624,15 +1952,137 @@ void YsSoundPlayer::SoundData::APISpecificDataPerSoundData::CleanUp(void)
 
 {
 
-	if(nullptr!=sndPtr)
+	if(nullptr!=dSoundBuf)
 
 	{
 
-		YsSimpleSound_OSX_DeleteSound(sndPtr);
+		dSoundBuf->Release();
 
-		sndPtr=nullptr;
+		dSoundBuf=nullptr;
 
 	}
+
+}
+
+
+
+void YsSoundPlayer::SoundData::APISpecificDataPerSoundData::CreateBuffer(LPDIRECTSOUND8 dSound8,SoundData &dat)
+
+{
+
+	CleanUp();
+
+
+
+	const int nChannels=dat.GetNumChannel();
+
+	const int nBlockAlign=nChannels*dat.BitPerSample()/8;
+
+	const int nAvgBytesPerSec=dat.PlayBackRate()*nBlockAlign;
+
+
+
+	WAVEFORMATEX fmt;
+
+	fmt.cbSize=sizeof(fmt);
+
+	fmt.wFormatTag=WAVE_FORMAT_PCM;
+
+
+
+	fmt.nChannels=nChannels;
+
+	fmt.nSamplesPerSec=dat.PlayBackRate();
+
+	fmt.wBitsPerSample=dat.BitPerSample();
+
+
+
+	fmt.nBlockAlign=nBlockAlign;
+
+	fmt.nAvgBytesPerSec=nAvgBytesPerSec;
+
+
+
+
+
+	DSBUFFERDESC desc;
+
+	desc.dwSize=sizeof(desc);
+
+	// Finally!  I found it!
+
+	// https://stackoverflow.com/questions/25829935/play-background-music-with-directsound
+
+	// I can play sound when the window loses focus!
+
+	desc.dwFlags=DSBCAPS_CTRLVOLUME|DSBCAPS_LOCDEFER|DSBCAPS_GLOBALFOCUS;
+
+	desc.dwBufferBytes=dat.SizeInByte();
+
+	if(DSBSIZE_MAX<desc.dwBufferBytes)
+
+	{
+
+		desc.dwBufferBytes=DSBSIZE_MAX;
+
+	}
+
+	desc.dwReserved=0;
+
+	desc.lpwfxFormat=&fmt;
+
+	desc.guid3DAlgorithm=GUID_NULL;
+
+	if(DS_OK==dSound8->CreateSoundBuffer(&desc,&dSoundBuf,NULL))
+
+	{
+
+		auto datPtr=dat.DataPointer();
+
+
+
+		DWORD writeBufSize1,writeBufSize2;
+
+		unsigned char *writeBuf1,*writeBuf2;
+
+		if(dSoundBuf->Lock(0,0,(LPVOID *)&writeBuf1,&writeBufSize1,(LPVOID *)&writeBuf2,&writeBufSize2,DSBLOCK_ENTIREBUFFER)==DS_OK &&
+
+		   NULL!=writeBuf1)
+
+		{
+
+			// printf("Buffer Locked\n");
+
+
+
+			for(int i=0; i<(int)dat.SizeInByte() && i<(int)writeBufSize1; i++)
+
+			{
+
+				writeBuf1[i]=datPtr[i];
+
+			}
+
+
+
+			dSoundBuf->Unlock(writeBuf1,writeBufSize1,writeBuf2,writeBufSize2);
+
+		}
+
+		else
+
+		{
+
+			printf("Failed to Lock Buffer.\n");
+
+			CleanUp();
+
+		}
+
+	}
+
+	
 
 }
 
@@ -1664,19 +2114,31 @@ YSRESULT YsSoundPlayer::SoundData::PreparePlay(YsSoundPlayer &player)
 
 {
 
-	if(nullptr==api->sndPtr)
+	if(nullptr!=api->dSoundBuf)
 
 	{
 
-		api->sndPtr=YsSimpleSound_OSX_CreateSound(player.api->enginePtr,dat.size(),dat.data(),PlayBackRate(),GetNumChannel());
+		return YSOK;
 
-		if(nullptr!=api->sndPtr)
+	}
 
-		{
+	if(nullptr==player.api->dSound8)
 
-			return YSOK;
+	{
 
-		}
+		return YSERR;
+
+	}
+
+
+
+	api->CreateBuffer(player.api->dSound8,*this);
+
+	if(nullptr!=api->dSoundBuf)
+
+	{
+
+		return YSOK;
 
 	}
 
@@ -1690,31 +2152,153 @@ void YsSoundPlayer::SoundData::CleanUpAPISpecific(void)
 
 {
 
+	if(nullptr!=playerStatePtr && YsSoundPlayer::STATE_ENDED==*playerStatePtr)
+
+	{
+
+		// In this case, DirectSoundBuffer is gone with the player.
+
+		api->dSoundBuf=nullptr;
+
+	}
+
 	api->CleanUp();
 
 }
 
 
 
-//////////////////////////////////////////////////////////////
 
 
 
-struct YsAVAudioStreamPlayer;
 
-extern "C" struct YsAVAudioStreamPlayer *YsSimpleSound_OSX_CreateStreamPlayer(struct YsAVAudioEngine *engineInfoPtr);
-
-extern "C" void YsSimpleSound_OSX_DeleteStreamPlayer(struct YsAVAudioStreamPlayer *streamPlayer);
+////////////////////////////////////////////////////////////
 
 
 
-extern "C" int YsSimpleSound_OSX_StartStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+void YsSoundPlayer::APISpecificData::OpenDummyWindow(void)
 
-extern "C" void YsSimpleSound_OSX_StopStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+{
 
-extern "C" int YsSimpleSound_OSX_StreamPlayerReadyToAcceptNextSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+	#define WINSTYLE WS_OVERLAPPED|WS_CAPTION|WS_VISIBLE|WS_SYSMENU|WS_THICKFRAME|WS_MINIMIZEBOX|WS_MAXIMIZEBOX|WS_CLIPCHILDREN
 
-extern "C" int YsSimpleSound_OSX_AddNextStreamingSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels);
+	#define WINCLASS L"YsSimpleSound_DummyWindowClass"
+
+	HINSTANCE inst=GetModuleHandleA(NULL);
+
+
+
+	WNDCLASSW wc;
+
+	wc.style=CS_OWNDC|CS_BYTEALIGNWINDOW;
+
+	wc.lpfnWndProc=(WNDPROC)OwnWindowFunc;
+
+	wc.cbClsExtra=0;
+
+	wc.cbWndExtra=0;
+
+	wc.hInstance=(HINSTANCE)inst;
+
+	wc.hIcon=nullptr;
+
+	wc.hCursor=nullptr;
+
+	wc.hbrBackground=nullptr;
+
+	wc.lpszMenuName=NULL;
+
+	wc.lpszClassName=WINCLASS;
+
+
+
+	if(0!=RegisterClassW(&wc))
+
+	{
+
+		RECT rc;
+
+		rc.left  =0;
+
+		rc.top   =0;
+
+		rc.right =127;
+
+		rc.bottom=127;
+
+		AdjustWindowRect(&rc,WINSTYLE,FALSE);
+
+		int wid  =rc.right-rc.left+1;
+
+		int hei  =rc.bottom-rc.top+1;
+
+
+
+		const wchar_t *WINTITLE=L"DummyWindowForFailedAPIDesignOfDirectSound";
+
+		hOwnWnd=CreateWindowW(WINCLASS,WINTITLE,WINSTYLE,0,0,wid,hei,NULL,NULL,inst,NULL);
+
+
+
+		ShowWindow(hOwnWnd,SW_SHOWNORMAL);
+
+		SetForegroundWindow(hOwnWnd);
+
+	}
+
+}
+
+
+
+void YsSoundPlayer::APISpecificData::DestroyDummyWindow(void)
+
+{
+
+	if(nullptr!=hOwnWnd)
+
+	{
+
+		DestroyWindow(hOwnWnd);
+
+	}
+
+	hOwnWnd=nullptr;
+
+}
+
+
+
+LRESULT WINAPI YsSoundPlayer::APISpecificData::OwnWindowFunc(HWND hWnd,UINT msg,WPARAM wp,LPARAM lp)
+
+{
+
+	return DefWindowProc(hWnd,msg,wp,lp);
+
+}
+
+
+
+////////////////////////////////////////////////////////////
+
+
+
+enum
+
+{
+
+	RINGBUFFER_MILLI=1000,
+
+
+
+	RINGBUFFER_CHANNELS=2,
+
+	RINGBUFFER_SAMPLING_RATE=44100,
+
+	RINGBUFFER_LENGTH_MILLISEC=10000,
+
+	RINGBUFFER_BITS_PER_SAMPLE=16,
+
+};
 
 
 
@@ -1724,7 +2308,15 @@ class YsSoundPlayer::Stream::APISpecificData
 
 public:
 
-	struct YsAVAudioStreamPlayer *streamPlayer=nullptr;
+	LPDIRECTSOUNDBUFFER dSoundBuf=nullptr;
+
+
+
+	uint64_t bufferLengthInBytes;
+
+	int64_t seg0Start,seg0End;
+
+	int64_t seg1Start,seg1End;
 
 };
 
@@ -1734,11 +2326,11 @@ YsSoundPlayer::Stream::APISpecificData *YsSoundPlayer::Stream::CreateAPISpecific
 
 {
 
-	auto apiDataPtr=new APISpecificData;
+	YsSoundPlayer::Stream::APISpecificData *api=new YsSoundPlayer::Stream::APISpecificData;
 
-	apiDataPtr->streamPlayer=nullptr;
+	api->dSoundBuf=nullptr;
 
-	return apiDataPtr;
+	return api;
 
 }
 
@@ -1746,15 +2338,19 @@ void YsSoundPlayer::Stream::DeleteAPISpecificData(APISpecificData *api)
 
 {
 
-	if(nullptr!=api->streamPlayer)
+	if(nullptr!=api)
 
 	{
 
-		YsSimpleSound_OSX_DeleteStreamPlayer(api->streamPlayer);
+		if(nullptr!=api->dSoundBuf)
+
+		{
+
+		}
+
+		delete api;
 
 	}
-
-	delete api;
 
 }
 
@@ -1764,15 +2360,167 @@ YSRESULT YsSoundPlayer::StartStreamingAPISpecific(Stream &stream)
 
 {
 
-	if(nullptr==stream.api->streamPlayer)
+	auto api=stream.api;
+
+	if(nullptr!=api)
 
 	{
 
-		stream.api->streamPlayer=YsSimpleSound_OSX_CreateStreamPlayer(this->api->enginePtr);
+		const int nChannels=RINGBUFFER_CHANNELS;
+
+		const int nBlockAlign=nChannels*RINGBUFFER_BITS_PER_SAMPLE/8;
+
+		const int nAvgBytesPerSec=RINGBUFFER_SAMPLING_RATE*nBlockAlign;
+
+
+
+		uint64_t sizeInBytes=RINGBUFFER_SAMPLING_RATE;
+
+		sizeInBytes*=RINGBUFFER_BITS_PER_SAMPLE/8;
+
+		sizeInBytes*=RINGBUFFER_CHANNELS;
+
+		sizeInBytes*=RINGBUFFER_LENGTH_MILLISEC;
+
+		sizeInBytes/=RINGBUFFER_MILLI;
+
+
+
+		stream.api->bufferLengthInBytes=sizeInBytes;
+
+
+
+		WAVEFORMATEX fmt;
+
+		fmt.cbSize=sizeof(fmt);
+
+		fmt.wFormatTag=WAVE_FORMAT_PCM;
+
+
+
+		fmt.nChannels=nChannels;
+
+		fmt.nSamplesPerSec=RINGBUFFER_SAMPLING_RATE;
+
+		fmt.wBitsPerSample=RINGBUFFER_BITS_PER_SAMPLE;
+
+
+
+		fmt.nBlockAlign=nBlockAlign;
+
+		fmt.nAvgBytesPerSec=nAvgBytesPerSec;
+
+
+
+
+
+		DSBUFFERDESC desc;
+
+		desc.dwSize=sizeof(desc);
+
+		// Finally!  I found it!
+
+		// https://stackoverflow.com/questions/25829935/play-background-music-with-directsound
+
+		// I can play sound when the window loses focus!
+
+		desc.dwFlags=DSBCAPS_CTRLVOLUME|DSBCAPS_LOCDEFER|DSBCAPS_GLOBALFOCUS|DSBCAPS_GETCURRENTPOSITION2;
+
+		desc.dwBufferBytes=sizeInBytes;
+
+		if(DSBSIZE_MAX<desc.dwBufferBytes)
+
+		{
+
+			desc.dwBufferBytes=DSBSIZE_MAX;
+
+		}
+
+		desc.dwReserved=0;
+
+		desc.lpwfxFormat=&fmt;
+
+		desc.guid3DAlgorithm=GUID_NULL;
+
+		if(DS_OK==this->api->dSound8->CreateSoundBuffer(&desc,&stream.api->dSoundBuf,NULL))
+
+		{
+
+			DWORD writeBufSize1,writeBufSize2;
+
+			unsigned char *writeBuf1,*writeBuf2;
+
+			if(stream.api->dSoundBuf->Lock(0,0,(LPVOID *)&writeBuf1,&writeBufSize1,(LPVOID *)&writeBuf2,&writeBufSize2,DSBLOCK_ENTIREBUFFER)==DS_OK)
+
+			{
+
+				if(NULL!=writeBuf1)
+
+				{
+
+					for(int i=0; i<(int)writeBufSize1; i++)
+
+					{
+
+						writeBuf1[i]=0;
+
+					}
+
+				}
+
+				if(NULL!=writeBuf2)
+
+				{
+
+					for(int i=0; i<(int)writeBufSize2; i++)
+
+					{
+
+						writeBuf2[i]=0;
+
+					}
+
+				}
+
+
+
+				stream.api->dSoundBuf->Unlock(writeBuf1,writeBufSize1,writeBuf2,writeBufSize2);
+
+
+
+				stream.api->dSoundBuf->SetCurrentPosition(0);
+
+				stream.api->dSoundBuf->Play(0,0xc0000000,DSBPLAY_LOOPING);
+
+
+
+				stream.api->seg0Start=0;
+
+				stream.api->seg0End=0;
+
+				stream.api->seg1Start=0;
+
+				stream.api->seg1End=0;
+
+			}
+
+			else
+
+			{
+
+				printf("Failed to Lock Buffer.\n");
+
+				return YSERR;
+
+			}
+
+		}
+
+		return YSOK;
 
 	}
 
-	return (YSRESULT)YsSimpleSound_OSX_StartStreaming(this->api->enginePtr,stream.api->streamPlayer);
+	return YSERR;
 
 }
 
@@ -1780,25 +2528,129 @@ void YsSoundPlayer::StopStreamingAPISpecific(Stream &stream)
 
 {
 
-	if(nullptr!=stream.api->streamPlayer)
+	if(nullptr!=stream.api && nullptr!=stream.api->dSoundBuf)
 
 	{
 
-		YsSimpleSound_OSX_StopStreaming(this->api->enginePtr,stream.api->streamPlayer);
+		DWORD writeBufSize1,writeBufSize2;
+
+		unsigned char *writeBuf1,*writeBuf2;
+
+
+
+		stream.api->dSoundBuf->Stop();
+
+		if(stream.api->dSoundBuf->Lock(0,0,(LPVOID *)&writeBuf1,&writeBufSize1,(LPVOID *)&writeBuf2,&writeBufSize2,DSBLOCK_ENTIREBUFFER)==DS_OK)
+
+		{
+
+			if(NULL!=writeBuf1)
+
+			{
+
+				for(int i=0; i<(int)writeBufSize1; i++)
+
+				{
+
+					writeBuf1[i]=0;
+
+				}
+
+			}
+
+			if(NULL!=writeBuf2)
+
+			{
+
+				for(int i=0; i<(int)writeBufSize2; i++)
+
+				{
+
+					writeBuf2[i]=0;
+
+				}
+
+			}
+
+
+
+			stream.api->dSoundBuf->Unlock(writeBuf1,writeBufSize1,writeBuf2,writeBufSize2);
+
+
+
+			stream.api->dSoundBuf->SetCurrentPosition(0);
+
+
+
+			stream.api->seg0Start=0;
+
+			stream.api->seg0End=0;
+
+			stream.api->seg1Start=0;
+
+			stream.api->seg1End=0;
+
+		}
 
 	}
 
 }
 
-YSBOOL YsSoundPlayer::StreamPlayerReadyToAcceptNextSegmentAPISpecific(const Stream &stream,const SoundData &) const
+YSBOOL YsSoundPlayer::StreamPlayerReadyToAcceptNextSegmentAPISpecific(const Stream &stream,const SoundData &dat) const
 
 {
 
-	if(nullptr!=stream.api->streamPlayer)
+	if(nullptr!=stream.api && nullptr!=stream.api->dSoundBuf)
 
 	{
 
-		return (YSBOOL)YsSimpleSound_OSX_StreamPlayerReadyToAcceptNextSegment(this->api->enginePtr,stream.api->streamPlayer);
+		DWORD playCursor,writeCursor;
+
+		stream.api->dSoundBuf->GetCurrentPosition(&playCursor,&writeCursor);
+
+		// Two segments: Seg0 -> Seg1.
+
+		// Next data should be written when Seg0 is done.
+
+		if(stream.api->seg0Start<=stream.api->seg0End)
+
+		{
+
+			//   0   seg0Start       seg0End
+
+			//   |     |---------------|        |
+
+			//                SEG0
+
+			if(playCursor<stream.api->seg0Start || stream.api->seg0End<=playCursor)
+
+			{
+
+				return YSTRUE;
+
+			}
+
+		}
+
+		else // means segment 0 wrapped around.
+
+		{
+
+			//   0   seg0End         seg0Start
+
+			//   |----|                |--------|
+
+			//    SEG0                    SEG0
+
+			if(stream.api->seg0End<=playCursor && playCursor<stream.api->seg0Start)
+
+			{
+
+				return YSTRUE;
+
+			}
+
+		}
 
 	}
 
@@ -1810,15 +2662,291 @@ YSRESULT YsSoundPlayer::AddNextStreamingSegmentAPISpecific(Stream &stream,const 
 
 {
 
-	if(nullptr!=stream.api->streamPlayer)
+	// How can I tell both segments lapsed?
+
+	// If playing segment1, add it to the end of segment 1, and erase segment 0.
+
+	// If not, lapsed or it is the first segment.  Just write it to writeCursor.
+
+	if(nullptr!=stream.api && nullptr!=stream.api->dSoundBuf)
 
 	{
 
-		return (YSRESULT)YsSimpleSound_OSX_AddNextStreamingSegment(this->api->enginePtr,stream.api->streamPlayer,dat.dat.size(),dat.dat.data(),dat.PlayBackRate(),dat.GetNumChannel());
+		int64_t numSamplesIn=dat.GetNumSamplePerChannel();
+
+		int64_t numSamplesOut=numSamplesIn;
+
+		numSamplesOut*=RINGBUFFER_SAMPLING_RATE;
+
+		numSamplesOut/=dat.PlayBackRate();
+
+
+
+
+
+
+
+		DWORD playCursor,writeCursor;
+
+		stream.api->dSoundBuf->GetCurrentPosition(&playCursor,&writeCursor);
+
+
+
+		bool isPlayingSegment1=false;
+
+		if(stream.api->seg1Start<=stream.api->seg1End)
+
+		{
+
+			//   0   seg1Start       seg1End
+
+			//   |     |---------------|        |
+
+			//                SEG1
+
+			isPlayingSegment1=(stream.api->seg1Start<=playCursor && playCursor<stream.api->seg1End);
+
+		}
+
+		else // means segment 0 wrapped around.
+
+		{
+
+			//   0   seg1End         seg1Start
+
+			//   |----|                |--------|
+
+			//    SEG1                    SEG1
+
+			isPlayingSegment1=(playCursor<stream.api->seg1End || stream.api->seg1Start<=playCursor);
+
+		}
+
+
+
+		DWORD bytesCanWrite=0;
+
+		if(playCursor<writeCursor)
+
+		{
+
+			//   0   playCursor     writeCursor
+
+			//   |    |----------------|        |bufferLength
+
+			bytesCanWrite=stream.api->bufferLengthInBytes-(writeCursor-playCursor);
+
+		}
+
+		else
+
+		{
+
+			//   0   writeCursor     playCursor
+
+			//   |----|                |--------|
+
+			bytesCanWrite=playCursor-writeCursor;
+
+		}
+
+
+
+		if(true==isPlayingSegment1)
+
+		{
+
+			writeCursor=(DWORD)stream.api->seg1End;
+
+		}
+
+
+
+		DWORD bytesWrite=std::min<DWORD>(numSamplesOut*2*RINGBUFFER_CHANNELS,bytesCanWrite);
+
+
+
+
+
+		DWORD writeBufSize1,writeBufSize2;
+
+		unsigned char *writeBuf1,*writeBuf2;
+
+		if(stream.api->dSoundBuf->Lock(writeCursor,bytesWrite,(LPVOID *)&writeBuf1,&writeBufSize1,(LPVOID *)&writeBuf2,&writeBufSize2,0)==DS_OK)
+
+		{
+
+			const unsigned char *readPtr=dat.DataPointer();
+
+
+
+			int64_t balance=RINGBUFFER_SAMPLING_RATE;
+
+			if(NULL!=writeBuf1)
+
+			{
+
+				unsigned char *writePtr=(unsigned char *)writeBuf1;
+
+				uint64_t sizeLeft=writeBufSize1;
+
+				while(0<sizeLeft)
+
+				{
+
+					if(1==dat.GetNumChannel())
+
+					{
+
+						*writePtr++=readPtr[0];
+
+						*writePtr++=readPtr[1];
+
+						*writePtr++=readPtr[0];
+
+						*writePtr++=readPtr[1];
+
+					}
+
+					else
+
+					{
+
+						*writePtr++=readPtr[0];
+
+						*writePtr++=readPtr[1];
+
+						*writePtr++=readPtr[2];
+
+						*writePtr++=readPtr[3];
+
+					}
+
+
+
+					sizeLeft-=4;
+
+
+
+					balance-=dat.PlayBackRate();
+
+					while(balance<0)
+
+					{
+
+						balance+=RINGBUFFER_SAMPLING_RATE;
+
+						readPtr+=2*dat.GetNumChannel();
+
+					}
+
+				}
+
+			}
+
+
+
+			if(NULL!=writeBuf2)
+
+			{
+
+				unsigned char *writePtr=(unsigned char *)writeBuf2;
+
+				uint64_t sizeLeft=writeBufSize2;
+
+				while(0<sizeLeft)
+
+				{
+
+					if(1==dat.GetNumChannel())
+
+					{
+
+						*writePtr++=readPtr[0];
+
+						*writePtr++=readPtr[1];
+
+						*writePtr++=readPtr[0];
+
+						*writePtr++=readPtr[1];
+
+					}
+
+					else
+
+					{
+
+						*writePtr++=readPtr[0];
+
+						*writePtr++=readPtr[1];
+
+						*writePtr++=readPtr[2];
+
+						*writePtr++=readPtr[3];
+
+					}
+
+
+
+					sizeLeft-=4;
+
+
+
+					balance-=dat.PlayBackRate();
+
+					while(balance<0)
+
+					{
+
+						balance+=RINGBUFFER_SAMPLING_RATE;
+
+						readPtr+=2*dat.GetNumChannel();
+
+					}
+
+				}
+
+			}
+
+			stream.api->dSoundBuf->Unlock(writeBuf1,writeBufSize1,writeBuf2,writeBufSize2);
+
+		}
+
+
+
+
+
+		if(true==isPlayingSegment1)
+
+		{
+
+			stream.api->seg0Start=stream.api->seg1Start;
+
+			stream.api->seg0End=stream.api->seg1End;
+
+		}
+
+		else
+
+		{
+
+			// Lapsed: Make entire rest of the buffer as segment 0.
+
+			stream.api->seg0Start=(writeCursor+bytesWrite)%stream.api->bufferLengthInBytes;
+
+			stream.api->seg0End=writeCursor;
+
+		}
+
+		stream.api->seg1Start=writeCursor;
+
+		stream.api->seg1End=(writeCursor+bytesWrite)%stream.api->bufferLengthInBytes;
+
+		return YSOK;
 
 	}
 
-	return YSOK;
+	return YSERR;
 
 }
 
