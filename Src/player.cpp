@@ -1,3 +1,5 @@
+// for windows visual studio compiler
+#define _CRT_SECURE_NO_WARNINGS
 #include "player.h"
 #include <string>
 
