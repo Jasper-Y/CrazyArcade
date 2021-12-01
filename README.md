@@ -1,4 +1,5 @@
 # CrazyArcade
+Members: Zhengyang Zou, Jiajun Ji, Chengji Yu, Yiping Dong, Dijing Zhang
 
 ### Overview
 * **Game Rules**  
@@ -26,16 +27,16 @@
 
 * **Win (Based on the test on Visual Studio 2019 Community version)** 
     * First, create a new project and the use Console App for project.  
-    * Second, remove default file and copy everything under `/Src, /Inc, /Ext/Win/Src, /Ext/Win/Inc, /Data/Map, /Data/Sound` folder from original path to `Your_Path_To_New_Project_File_Folder`.  
+    * Second, remove default file and copy everything under `/Src`, `/Inc`, `/Ext/Win/Src`, `/Ext/Win/Inc`, `/Data/Map`, `/Data/Sound` folder from original path to `Your_Path_To_New_Project_File_Folder`.  
     * Third, press `Shift+Alt+A` or use Project->Add Existing Item function to add all copied files into current project.  
     * Last, run `main.cpp` to start the program.
     * (You have other options, e.g., use command line to compile. Make sure the files are under the same file directory and the command includes all the source file in /Src.)
     
 
-### Construction
-<img src="Data/Readme/code_structure.png" width="90%">
+### Code Construction
+<img src="Data/Readme/code_structure.png" width="60%">
 
 
-### Flow
-<img src="Data/Readme/flow_chart.png" width="90%">
+### Work Flow
+<img src="Data/Readme/flow_chart.png" width="60%">
 
