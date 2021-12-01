@@ -16,7 +16,6 @@ enum BubbleDirection {
 };
 
 class Bubble {
-    // friend BubbleManager;
 
   private:
     int x, y;

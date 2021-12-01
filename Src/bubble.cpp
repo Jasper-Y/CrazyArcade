@@ -13,9 +13,6 @@ bool Bubble::ChangeSingleGrid(int target_x, int target_y,
     GridStatus pre_status = map->GetGrid(target_x, target_y);
     switch (pre_status) {
     case GridFree: {
-        // Entering the exploding status or the exploding status is changed by
-        // other bubbles (it is redundant to check the DISAPPEAR_TIME, just
-        // leave it temporarily)
         if (time_counter < EXPLODE_TIME && direction == BubbleMid) {
             if (time_counter % 2 == 1) {
                 map->SetGrid(x, y, GridBubbleWaitBig);
@@ -115,136 +112,71 @@ int Bubble::Update() {
         boom_player.PlayOneShot(boom_wav);
     }
     bool re_update = false;
-    // bool destroy_flag = false;
     re_update = ChangeSingleGrid(x, y, BubbleMid);
     if (!re_update && time_counter < EXPLODE_TIME) {
         return time_counter;
     } else if (!re_update) {
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x, y + i) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             if ((re_update = ChangeSingleGrid(x, y + i, BubbleUpside)) ==
                 true) {
                 break;
             }
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x, y - i) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             if ((re_update = ChangeSingleGrid(x, y - i, BubbleDownside)) ==
                 true) {
                 break;
             }
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x + i, y) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             if ((re_update = ChangeSingleGrid(x + i, y, BubbleRightside)) ==
                 true) {
                 break;
             }
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x - i, y) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             if ((re_update = ChangeSingleGrid(x - i, y, BubbleLeftside)) ==
                 true) {
                 break;
             }
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
     }
     if (re_update) {
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x, y + i) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             ChangeSingleGrid(x, y + i, BubbleUpside);
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x, y - i) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             ChangeSingleGrid(x, y - i, BubbleDownside);
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x + i, y) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             ChangeSingleGrid(x + i, y, BubbleRightside);
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
         for (int i = 1; i <= my_range; i++) {
-            // destroy_flag = false;
             if (map->GetGrid(x - i, y) == GridIndestructible) {
                 break;
             }
-            // if (map->GetGrid(x, y - i) == GridDestructible ||
-            //     map->GetGrid(x, y + i) >= GridBubbleWaitBig) {
-            //     destroy_flag = true;
-            // }
             ChangeSingleGrid(x - i, y, BubbleLeftside);
-            // if (destroy_flag) {
-            //     break;
-            // }
         }
     }
     return time_counter;

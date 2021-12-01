@@ -15,6 +15,7 @@ echo "Copying files to $des_path ..."
 cp Src/* $des_path
 cp Inc/* $des_path
 cp Data/Map/* $des_path
+cp Data/Sound/* $des_path
 
 cd $des_path
 clang++ map.cpp main.cpp fssimplewindowcpp.cpp fssimplewindowobjc.o \
