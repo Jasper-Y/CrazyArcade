@@ -1,7 +1,20 @@
 # CrazyArcade
 
 ### Overview
-@todo
+* **Game Rules**  
+  * Basic rules  
+    * Using bubbles to destruct cells and attack the opponent.  
+  * Basic props  
+    * Longer bubble  
+    * More bubbles  
+    * Speed up  
+  * Key settings  
+    * Player1:  
+      * UP/DOWN/LEFT/RIGHT -- Move  
+      * ENTER -- Place Bubble  
+    * Player2:  
+      * W/S/A/D -- Move  
+      * SPACE -- Place Bubble  
 
 ### Install
 * **Mac**
