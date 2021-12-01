@@ -126,9 +126,18 @@ PlayerState Player::Update() {
     bubble_manager->UpdateBubbles();
     GridStatus grid_state = map->GetGrid((x + RESOLUTION / 2) / RESOLUTION,
                                          (y - RESOLUTION / 2) / RESOLUTION);
-    if (grid_state >= GridExplodingMid && grid_state <= GridExplodingRightwards){
+    if (grid_state >= GridExplodingMid &&
+        grid_state <= GridExplodingRightwards) {
         state = PlayerDead;
-    } 
+    } else if (grid_state == GridMoreBubble || grid_state == GridLongerBubble) {
+        bubble_manager->AddProps(grid_state);
+        map->SetGrid((x + RESOLUTION / 2) / RESOLUTION,
+                     (y - RESOLUTION / 2) / RESOLUTION, GridFree);
+    } else if (grid_state == GridSpeedUp) {
+        v = v <= 150 ? v + 50 : v;
+        map->SetGrid((x + RESOLUTION / 2) / RESOLUTION,
+                     (y - RESOLUTION / 2) / RESOLUTION, GridFree);
+    }
     return state;
 }
 

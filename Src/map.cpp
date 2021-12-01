@@ -23,7 +23,7 @@ Bitmap::Bitmap() {
     }
 
     if (YSOK == png[2].Decode("morebubble.png")) {
-        png[2].Flip();
+        // png[2].Flip();
         printf("%d x %d\n", png[2].wid, png[2].hei);
     } else {
         printf("Could not read the image.\n");
@@ -36,7 +36,7 @@ Bitmap::Bitmap() {
         printf("Could not read the image.\n");
     }
     if (YSOK == png[4].Decode("SpeedUp.png")) {
-        png[4].Flip();
+        // png[4].Flip();
         printf("%d x %d\n", png[4].wid, png[4].hei);
     } else {
         printf("Could not read the image.\n");
