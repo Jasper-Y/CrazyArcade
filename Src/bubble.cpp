@@ -230,7 +230,7 @@ void BubbleManager::LayBubble(int x, int y) {
     Bubble *new_bubble = new Bubble(map, range, x, y);
     bubble_list.push_back(new_bubble);
     if (bubble_player.IsPlaying(bubble_wav)) {
-        bubble_player.End();
+        bubble_player.Stop(bubble_wav);
     }
     bubble_player.Start();
     bubble_player.PlayOneShot(bubble_wav);
