@@ -27,6 +27,7 @@ class Player {
     int player_id; // for decoder
     YsRawPngDecoder
         png[4]; // to decode player image 0:front, 1:back 2:left 3:right
+
   public:
     Player(int loc_x, int loc_y, int id, Bitmap *map);
     Player();

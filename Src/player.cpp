@@ -30,6 +30,7 @@ Player::Player() {
 
     map = nullptr;
     bubble_manager = new BubbleManager(map);
+
 }
 
 void Player::SetLocation(int loc_x, int loc_y) {

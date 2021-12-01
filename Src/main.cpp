@@ -143,6 +143,18 @@ int main(void) {
     srand(time(nullptr));
     GameManager manager;
     FsOpenWindow(0, 0, RESOLUTION * COLUMN, RESOLUTION * ROW, 1);
+
+    // bgm player
+    YsSoundPlayer BGM_player;
+    YsSoundPlayer::SoundData wav;
+    char bgm_file_name[] = "bgm.wav";
+    if (YSOK != wav.LoadWav(bgm_file_name)) {
+        printf("failed to read %s\n", bgm_file_name);
+    }else {
+        BGM_player.Start();
+        BGM_player.PlayBackground(wav);
+    }
+
     std::thread background(&ExecuteCommand, &manager);
     int key, terminate = 0;
     CommandType command;

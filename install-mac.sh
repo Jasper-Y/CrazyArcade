@@ -1,6 +1,6 @@
 # make sure you have the data files and the YS libraries installed
 
-des_path=""
+des_path="./runs/"
 install_path="test.app/Contents/MacOS/test"
 
 while getopts "p:" optname

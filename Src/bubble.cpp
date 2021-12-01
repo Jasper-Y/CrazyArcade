@@ -4,6 +4,7 @@ Bubble::Bubble(Bitmap *map_in, int range, int x_in, int y_in)
     : map(map_in), my_range(range), x(x_in), y(y_in) {
     // Initialize to small, to make it big in first update
     map->SetGrid(x, y, GridBubbleWaitSmall);
+    boom_wav.LoadWav("boom.wav");
 }
 
 // Return true if it's affected by neighbors, so re-update once
@@ -106,6 +107,13 @@ bool Bubble::ChangeSingleGrid(int target_x, int target_y,
 
 int Bubble::Update() {
     time_counter++;
+    if (time_counter == EXPLODE_TIME) {
+        if (boom_player.IsPlaying(boom_wav)){
+            boom_player.End();
+        }
+        boom_player.Start();
+        boom_player.PlayOneShot(boom_wav);
+    }
     bool re_update = false;
     // bool destroy_flag = false;
     re_update = ChangeSingleGrid(x, y, BubbleMid);
@@ -244,6 +252,8 @@ int Bubble::Update() {
 
 BubbleManager::BubbleManager(Bitmap *map) {
     this->map = map;
+    // boom_wav.LoadWav("boom.wav");
+    bubble_wav.LoadWav("bubble.wav");
 }
 
 BubbleManager::~BubbleManager() {
@@ -287,4 +297,9 @@ void BubbleManager::LayBubble(int x, int y) {
     }
     Bubble *new_bubble = new Bubble(map, range, x, y);
     bubble_list.push_back(new_bubble);
+    if (bubble_player.IsPlaying(bubble_wav)) {
+        bubble_player.End();
+    }
+    bubble_player.Start();
+    bubble_player.PlayOneShot(bubble_wav);
 }
