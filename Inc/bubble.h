@@ -25,8 +25,8 @@ class Bubble {
     bool ChangeSingleGrid(int target_x, int target_y,
                           BubbleDirection direction);
 
-    YsSoundPlayer boom_player;
-    YsSoundPlayer::SoundData boom_wav;
+    // YsSoundPlayer boom_player;
+    // YsSoundPlayer::SoundData boom_wav;
 
   public:
     Bubble(Bitmap *map_in, int range, int x_in, int y_in);
