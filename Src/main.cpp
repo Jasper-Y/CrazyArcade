@@ -37,8 +37,14 @@ class GameManager {
      */
     bool Update(void) {
         // @todo: update all attributes
-        p1->Update();
-        p2->Update();
+        if (p1->Update() == PlayerDead) {
+            is_playing = false;
+            return false;
+        }
+        if (p2->Update() == PlayerDead) {
+            is_playing = false;
+            return false;
+        }
         return true;
     }
 
@@ -78,14 +84,7 @@ void ExecuteCommand(GameManager *manager) {
             case P1_RIGHT:
                 manager->p1->MovePlayer(PlayerRight);
                 break;
-                // {
-                // printf("P1 movement: %d\n", cur_cmd);
-                // // @TODO: call player1 MovePlayer
-                // break;
-            // }
             case P1_PLACE: {
-                printf("P1 place bubble: %d\n", cur_cmd);
-                // @TODO: call player1 LayBubble
                 manager->p1->LayBubble();
                 break;
             }
@@ -101,14 +100,7 @@ void ExecuteCommand(GameManager *manager) {
             case P2_RIGHT:
                 manager->p2->MovePlayer(PlayerRight);
                 break;
-            //     {
-            //     printf("P2 movement: %d\n", cur_cmd);
-            //     // @TODO: call player2 MovePlayer
-            //     break;
-            // }
             case P2_PLACE: {
-                printf("P2 place bubble: %d\n", cur_cmd);
-                // @TODO: call player2 LayBubble
                 manager->p2->LayBubble();
                 break;
             }
@@ -119,9 +111,7 @@ void ExecuteCommand(GameManager *manager) {
             }
             }
 
-            // @TODO: update state
-            // manager->SetPlaying(some_return_state);
-            if (!manager->IsPlaying() || !manager->Update()) {
+            if (!manager->Update() || !manager->IsPlaying()) {
                 printf("[Game overrrr]\n");
                 break;
             }
@@ -133,14 +123,17 @@ void ExecuteCommand(GameManager *manager) {
             // Represent the operation cost for rendering
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-        if (!manager->IsPlaying() || !manager->Update()) {
+        if (!manager->Update() || !manager->IsPlaying()) {
             printf("[Game overrrr]\n");
+            break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+    printf("[Quit thread...]\n");
 }
 
-void PushCommand(GameManager *manager, std::unique_lock<std::mutex> &my_lock, CommandType cmd){
+void PushCommand(GameManager *manager, std::unique_lock<std::mutex> &my_lock,
+                 CommandType cmd) {
     my_lock.lock();
     manager->cmd_buf.push(cmd);
     my_lock.unlock();
@@ -204,5 +197,6 @@ int main(void) {
     }
     // Wait background thread until finishes
     background.join();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     return 0;
 }

@@ -4,9 +4,9 @@
 #define PLAYER_DT 0.1
 #include "map.h"
 
-enum Player_State { alive, dead, immortal };
+enum PlayerState { PlayerAlive, PlayerDead, PlayerImmortal };
 
-enum Player_Heading { PlayerUp, PlayerDown, PlayerRight, PlayerLeft };
+enum PlayerHeading { PlayerUp, PlayerDown, PlayerRight, PlayerLeft };
 
 #endif
 
@@ -18,10 +18,10 @@ enum Player_Heading { PlayerUp, PlayerDown, PlayerRight, PlayerLeft };
 
 class Player {
   private:
-    int x, y;               // location of player
-    double v;               // velocity of player
-    Player_State state;     // state of player
-    Player_Heading heading; // heading direction of player
+    int x, y;              // location of player
+    double v;              // velocity of player
+    PlayerState state;     // state of player
+    PlayerHeading heading; // heading direction of player
     BubbleManager *bubble_manager;
     Bitmap *map;
     int player_id; // for decoder
@@ -36,12 +36,10 @@ class Player {
 
     // void AddProps(Prop prop);
     // void DrawPlayer() const;
-    void Update() {
-        bubble_manager->UpdateBubbles();
-    };
+    PlayerState Update();
     void LayBubble();
     void Draw() const;
-    void MovePlayer(Player_Heading h);
+    void MovePlayer(PlayerHeading h);
     void isDead();
     void SetLocation(int loc_x, int loc_y);
 };

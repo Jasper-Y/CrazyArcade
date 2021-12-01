@@ -6,7 +6,7 @@ Player::Player() {
     y = -1;
     v = 100;
     player_id = 1;
-    state = alive;
+    state = PlayerAlive;
     heading = PlayerUp;
 
     std::string player_id_str = std::string("p") + std::to_string(player_id);
@@ -39,7 +39,7 @@ Player::Player(int loc_x, int loc_y, int id, Bitmap *m) {
     x = loc_x;
     y = loc_y;
     v = 100;
-    state = alive;
+    state = PlayerAlive;
     heading = PlayerUp;
 
     map = m;
@@ -72,6 +72,9 @@ Player::Player(int loc_x, int loc_y, int id, Bitmap *m) {
 }
 
 void Player::Draw() const {
+    if (state == PlayerDead) {
+        return;
+    }
     glRasterPos2d(x, y);
     int i;
     switch (heading) {
@@ -119,9 +122,23 @@ void Player::LayBubble() {
                               (y - RESOLUTION / 2) / RESOLUTION);
 }
 
-void Player::MovePlayer(Player_Heading h) {
+PlayerState Player::Update() {
+    bubble_manager->UpdateBubbles();
+    GridStatus grid_state = map->GetGrid((x + RESOLUTION / 2) / RESOLUTION,
+                                         (y - RESOLUTION / 2) / RESOLUTION);
+    if (grid_state >= GridExplodingMid && grid_state <= GridExplodingRightwards){
+        state = PlayerDead;
+    } 
+    return state;
+}
+
+void Player::MovePlayer(PlayerHeading h) {
+    if (state == PlayerDead) {
+        return;
+    }
     heading = h;
     int next_y = y, next_x = x;
+    int backup_y = y, backup_x = x;
     switch (h) {
     case PlayerUp: {
         // use ordinary coordinate system
@@ -166,10 +183,21 @@ void Player::MovePlayer(Player_Heading h) {
         break;
     }
     }
+    GridStatus pre_state =
+        map->GetGrid((backup_x + RESOLUTION / 2) / RESOLUTION,
+                     (backup_y - RESOLUTION / 2) / RESOLUTION);
+    GridStatus next_state = map->GetGrid((x + RESOLUTION / 2) / RESOLUTION,
+                                         (y - RESOLUTION / 2) / RESOLUTION);
+    if (pre_state != GridBubbleWaitBig && pre_state != GridBubbleWaitSmall &&
+        (next_state == GridBubbleWaitSmall ||
+         next_state == GridBubbleWaitBig)) {
+        x = backup_x;
+        y = backup_y;
+    }
 }
 
 void Player::isDead() {
-    state = dead;
+    state = PlayerDead;
 }
 
 // int main(void){
